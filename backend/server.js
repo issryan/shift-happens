@@ -1,25 +1,29 @@
 const express = require('express');
-const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 const cors = require('cors');
-require('dotenv').config();
+const connectDB = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+
+// Initialize environment variables
+dotenv.config();
+
+// Connect to MongoDB
+connectDB();
 
 const app = express();
 
+// Middleware
 app.use(express.json());
 app.use(cors());
 
-app.get('/', (req, res) => {
-  res.send('Shift Happens API is running!');
-});
-
-const authRoutes = require('./routes/authRoutes');
-// Authentication routes
+// Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/employees', employeeRoutes);
 
-mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('Database connection error:', err));
+// Default route
+app.get('/', (req, res) => res.send('Shift Happens API is running!'));
 
-const PORT = process.env.PORT;
+// Start server
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
