@@ -18,6 +18,11 @@ const ScheduleSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    expires: 3888000, // 45 days in seconds
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Schedule', ScheduleSchema);

@@ -3,12 +3,18 @@ const User = require('../models/User');
 
 const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.header('Authorization');
+    let token = req.header('Authorization');
+
     if (!token) {
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
-    // Verify token
+    // Remove 'Bearer ' prefix if present
+    if (token.startsWith('Bearer ')) {
+      token = token.slice(7, token.length).trimLeft();
+    }
+
+    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = await User.findById(decoded.id).select('-password');
 
@@ -19,7 +25,7 @@ const authMiddleware = async (req, res, next) => {
     next();
   } catch (err) {
     console.error('Auth middleware error:', err.message);
-    res.status(401).json({ message: 'Token is not valid' });
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
 

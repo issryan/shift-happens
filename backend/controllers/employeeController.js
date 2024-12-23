@@ -46,7 +46,8 @@ exports.deleteEmployee = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this employee' });
     }
 
-    await employee.remove();
+    await Employee.deleteOne({ _id: employee._id });
+
     res.status(200).json({ message: 'Employee removed' });
   } catch (err) {
     console.error('Error deleting employee:', err.message);
