@@ -1,0 +1,30 @@
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    padding: 80px 10%;
+    background: linear-gradient(180deg, #F1F5F9 0%, rgba(255, 255, 255, 0.00) 100%);
+    text-align: center;
+}
+
+.feature img {
+    width: 80px;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+.feature h3 {
+    color: var(--Blue-Gray-900, #0F172A);
+    text-align: center;
+
+    font-size: 24px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 110%;
+}
+
+.feature p {
+    color: #666;
+    font-size: 16px;
+    line-height: 1.4;
+}

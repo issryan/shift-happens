@@ -1,0 +1,93 @@
+.instructions-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 80px 10%;
+    background-color: #fff;
+}
+
+.instructions-header h2 {
+    color: var(--Blue-Gray-900, #0F172A);
+    text-align: center;
+
+    font-size: 56px;
+    font-style: normal;
+    font-weight: 800;
+    line-height: 110%;
+}
+
+.instructions-header p {
+    color: var(--Blue-Gray-900, #0F172A);
+    text-align: center;
+
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 160%;
+
+    padding-bottom: 80px;
+}
+
+.instructions-content {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: 85px;
+}
+
+.team-table-image img {
+    width: 820px;
+    height: 420px;
+}
+
+.instructions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.instruction-item {
+    display: flex;
+    align-items: baseline;
+    gap: 22px;
+    width: 402px;
+    height: 162px;
+    flex-shrink: 0;
+}
+
+.instruction-info p {
+    width: 338px;
+    height: 87px;
+    flex-shrink: 0;
+
+    color: #161C2D;
+    font-size: 17px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 29px;
+    letter-spacing: -0.2px;
+    opacity: 0.7;
+}
+
+.number-circle {
+    min-width: 43px;
+    height: 43px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    font-family: 'Rubik', sans-serif;
+    font-size: 17px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 32px;
+    letter-spacing: -0.094px;
+    background-color: #e9e9fc;
+    color: #473bf0;
+    border-radius: 50%;
+}
+
+.number-circle span {
+    color: #fff;
+}

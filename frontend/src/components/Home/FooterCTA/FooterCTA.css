@@ -1,0 +1,46 @@
+.footer-cta {
+    text-align: center;
+    padding: 80px 10%;
+    background: linear-gradient(180deg, #EBECED 0%, #FFF 86.25%);
+    height: 494.131px;
+    flex-shrink: 0;
+}
+
+.footer-cta h2 {
+    color: #000;
+    text-align: center;
+    font-size: 48px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 60px;
+}
+
+.footer-cta p {
+    color: #6F7277;
+    text-align: center;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 30px;
+}
+
+.cta-button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    width: 220.5px;
+    height: 56.619px;
+    padding: 16px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.btn-container{
+    padding-top: 60px;
+}
+
+.cta-button:hover {
+    background-color: #0056b3;
+}

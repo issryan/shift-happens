@@ -1,0 +1,20 @@
+.faq-section {
+    padding: 80px 10%;
+    background-color: #fff;
+}
+
+.faq-section h2 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    align-self: stretch;
+
+    color: var(--Blue-Gray-900, #0F172A);
+    text-align: center;
+
+    font-size: 56px;
+    font-style: normal;
+    font-weight: 800;
+    line-height: 110%;
+}
