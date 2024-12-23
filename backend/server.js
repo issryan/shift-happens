@@ -5,6 +5,8 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
+const businessRoutes = require('./routes/businessRoutes');
+const operationsRoutes = require('./routes/operationsRoutes');
 
 // Initialize environment variables
 dotenv.config();
@@ -20,6 +22,8 @@ app.use(cors());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/business', businessRoutes);
+app.use('/api/operations', operationsRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/schedules', scheduleRoutes);
 
