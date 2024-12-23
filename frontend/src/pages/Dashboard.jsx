@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Modal from '../components/Modal';
+import AddEmployeeModal from '../components/AddEmployeeModal';
+import EditEmployeeModal from '../components/EditEmployeeModal';
 
 const Dashboard = () => {
   const [employees, setEmployees] = useState([]);
   const [totalHours, setTotalHours] = useState(0);
   const [onLeaveCount, setOnLeaveCount] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newEmployee, setNewEmployee] = useState({
     name: '',
     availability: {
@@ -18,6 +20,7 @@ const Dashboard = () => {
     },
     status: 'Available',
   });
+  const [currentEmployee, setCurrentEmployee] = useState(null);
 
   // Fetch employees and calculate stats
   const fetchEmployees = async () => {
@@ -42,6 +45,7 @@ const Dashboard = () => {
     fetchEmployees();
   }, []);
 
+  // Handle Add Employee
   const handleAddEmployee = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -55,11 +59,63 @@ const Dashboard = () => {
     }
   };
 
+  // Handle Edit Employee
+  const handleEditEmployee = (employee) => {
+    setCurrentEmployee(employee);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEmployee = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `http://localhost:5500/api/employees/${currentEmployee._id}`,
+        currentEmployee,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setShowEditModal(false);
+      fetchEmployees();
+    } catch (err) {
+      console.error('Error updating employee:', err.message);
+    }
+  };
+
+  const handleDeleteEmployee = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this employee?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5500/api/employees/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchEmployees();
+    } catch (err) {
+      console.error('Error deleting employee:', err.message);
+    }
+  };
+
+  // Handle Input Changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (showEditModal) {
+      setCurrentEmployee((prev) => ({ ...prev, [name]: value }));
+    } else {
+      setNewEmployee((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
   const handleAvailabilityChange = (day, time) => {
-    setNewEmployee((prev) => ({
-      ...prev,
-      availability: { ...prev.availability, [day]: time },
-    }));
+    if (showEditModal) {
+      setCurrentEmployee((prev) => ({
+        ...prev,
+        availability: { ...prev.availability, [day]: time },
+      }));
+    } else {
+      setNewEmployee((prev) => ({
+        ...prev,
+        availability: { ...prev.availability, [day]: time },
+      }));
+    }
   };
 
   return (
@@ -116,6 +172,7 @@ const Dashboard = () => {
               <th className="border border-gray-300 p-2">Name</th>
               <th className="border border-gray-300 p-2">Availability</th>
               <th className="border border-gray-300 p-2">Status</th>
+              <th className="border border-gray-300 p-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -123,13 +180,40 @@ const Dashboard = () => {
               <tr key={employee._id}>
                 <td className="border border-gray-300 p-2">{employee.name}</td>
                 <td className="border border-gray-300 p-2">
-                  {Object.entries(employee.availability).map(([day, time]) => (
-                    <div key={day}>
-                      {day}: {time || 'X'}
-                    </div>
-                  ))}
+                  <table className="min-w-full">
+                    <thead>
+                      <tr>
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
+                          <th key={day} className="p-1 border text-center">{day}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
+                          <td key={day} className="p-1 border text-center">
+                            {employee.availability[day] || 'X'}
+                          </td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
                 </td>
                 <td className="border border-gray-300 p-2">{employee.status}</td>
+                <td className="border border-gray-300 p-2">
+                  <button
+                    onClick={() => handleEditEmployee(employee)}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded mr-2"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteEmployee(employee._id)}
+                    className="bg-red-500 text-white px-4 py-2 rounded"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -137,43 +221,24 @@ const Dashboard = () => {
       </div>
 
       {/* Add Employee Modal */}
-      <Modal
-        title="Add New Employee"
+      <AddEmployeeModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddEmployee}
-      >
-        <input
-          type="text"
-          name="name"
-          value={newEmployee.name}
-          onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
-          placeholder="Employee Name"
-          className="w-full p-2 border rounded mb-4"
-        />
-        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-          <div key={day} className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">{day}</label>
-            <input
-              type="text"
-              value={newEmployee.availability[day]}
-              onChange={(e) => handleAvailabilityChange(day, e.target.value)}
-              placeholder="e.g., 9:00-13:00"
-              className="w-full p-2 border rounded"
-            />
-          </div>
-        ))}
-        <select
-          name="status"
-          value={newEmployee.status}
-          onChange={(e) => setNewEmployee({ ...newEmployee, status: e.target.value })}
-          className="w-full p-2 border rounded mb-4"
-        >
-          <option value="Available">Available</option>
-          <option value="On Leave">On Leave</option>
-          <option value="Sick">Sick</option>
-        </select>
-      </Modal>
+        newEmployee={newEmployee}
+        handleInputChange={handleInputChange}
+        handleAvailabilityChange={handleAvailabilityChange}
+      />
+
+      {/* Edit Employee Modal */}
+      <EditEmployeeModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleSaveEmployee}
+        currentEmployee={currentEmployee}
+        handleInputChange={handleInputChange}
+        handleAvailabilityChange={handleAvailabilityChange}
+      />
     </div>
   );
 };
