@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import CustomTimePicker from './CustomTimePicker';
 
 const EditEmployeeModal = ({
   isOpen,
@@ -6,8 +7,36 @@ const EditEmployeeModal = ({
   onSubmit,
   currentEmployee,
   handleInputChange,
-  handleAvailabilityChange,
 }) => {
+  const [availability, setAvailability] = useState(currentEmployee?.availability || {
+    Monday: { start: '', end: '' },
+    Tuesday: { start: '', end: '' },
+    Wednesday: { start: '', end: '' },
+    Thursday: { start: '', end: '' },
+    Friday: { start: '', end: '' },
+  });
+
+  useEffect(() => {
+    if (currentEmployee) {
+      setAvailability(currentEmployee.availability || {
+        Monday: { start: '', end: '' },
+        Tuesday: { start: '', end: '' },
+        Wednesday: { start: '', end: '' },
+        Thursday: { start: '', end: '' },
+        Friday: { start: '', end: '' },
+      });
+    }
+  }, [currentEmployee]);
+
+  const handleSaveAvailability = (data) => {
+    setAvailability(data);
+  };
+
+  const handleSubmit = () => {
+    const updatedEmployee = { ...currentEmployee, availability };
+    onSubmit(updatedEmployee);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -22,18 +51,8 @@ const EditEmployeeModal = ({
           placeholder="Employee Name"
           className="w-full p-2 border rounded mb-4"
         />
-        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => (
-          <div key={day} className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">{day}</label>
-            <input
-              type="text"
-              value={currentEmployee?.availability[day] || ''}
-              onChange={(e) => handleAvailabilityChange(day, e.target.value)}
-              placeholder="e.g., 9:00-13:00 or X"
-              className="w-full p-2 border rounded"
-            />
-          </div>
-        ))}
+        <h3 className="text-lg font-semibold mb-2">Edit Availability</h3>
+        <CustomTimePicker onSave={handleSaveAvailability} initialData={availability} />
         <select
           name="status"
           value={currentEmployee?.status || 'Available'}
@@ -44,7 +63,7 @@ const EditEmployeeModal = ({
           <option value="On Leave">On Leave</option>
           <option value="Sick">Sick</option>
         </select>
-        <div className="flex justify-end">
+        <div className="flex justify-end mt-4">
           <button
             onClick={onClose}
             className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
@@ -52,7 +71,7 @@ const EditEmployeeModal = ({
             Cancel
           </button>
           <button
-            onClick={onSubmit}
+            onClick={handleSubmit}
             className="bg-blue-500 text-white px-4 py-2 rounded"
           >
             Save

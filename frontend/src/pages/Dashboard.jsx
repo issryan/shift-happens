@@ -49,13 +49,14 @@ const Dashboard = () => {
   const handleAddEmployee = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Submitting employee data:', newEmployee);
       await axios.post('http://localhost:5500/api/employees', newEmployee, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setShowAddModal(false);
       fetchEmployees();
     } catch (err) {
-      console.error('Error adding employee:', err.message);
+      console.error('Error adding employee:', err.response?.data || err.message);
     }
   };
 
@@ -227,7 +228,6 @@ const Dashboard = () => {
         onSubmit={handleAddEmployee}
         newEmployee={newEmployee}
         handleInputChange={handleInputChange}
-        handleAvailabilityChange={handleAvailabilityChange}
       />
 
       {/* Edit Employee Modal */}
