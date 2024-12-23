@@ -14,11 +14,11 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const res = await axios.post('http://localhost:5500/api/auth/login', formData);
       localStorage.setItem('token', res.data.token);
-      navigate('/dashboard');
+      navigate('/dashboard'); 
     } catch (err) {
-      setError(err.response.data.message || 'Invalid credentials');
+      setError(err.response?.data?.message || 'Invalid credentials');
     }
   };
 
