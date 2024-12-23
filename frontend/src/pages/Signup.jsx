@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+const Register = () => {
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -14,11 +14,10 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
-      localStorage.setItem('token', res.data.token);
-      navigate('/dashboard');
+      await axios.post('http://localhost:5500/api/auth/register', formData);
+      navigate('/login');
     } catch (err) {
-      setError(err.response.data.message || 'Invalid credentials');
+      setError(err.response.data.message || 'An error occurred');
     }
   };
 
@@ -28,8 +27,16 @@ const Login = () => {
         className="bg-white p-6 rounded shadow-md w-96"
         onSubmit={handleSubmit}
       >
-        <h2 className="text-2xl font-bold mb-4">Login</h2>
+        <h2 className="text-2xl font-bold mb-4">Sign up</h2>
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        <input
+          type="text"
+          name="name"
+          placeholder="Name"
+          className="block w-full p-2 border mb-4"
+          value={formData.name}
+          onChange={handleChange}
+        />
         <input
           type="email"
           name="email"
@@ -50,11 +57,11 @@ const Login = () => {
           type="submit"
           className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
         >
-          Login
+          Register
         </button>
       </form>
     </div>
   );
 };
 
-export default Login;
+export default Register;
