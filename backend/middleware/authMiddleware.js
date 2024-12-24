@@ -9,12 +9,10 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
-    // Remove 'Bearer ' prefix if present
     if (token.startsWith('Bearer ')) {
-      token = token.slice(7, token.length).trimLeft();
+      token = token.slice(7).trim();
     }
 
-    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = await User.findById(decoded.id).select('-password');
 
