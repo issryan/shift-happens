@@ -1,31 +1,56 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { saveBusinessInfo } from '../utils/api';
 
-function BusinessInfo() {
-    const [businessName, setBusinessName] = useState('');
-    const [location, setLocation] = useState('');
-    const navigate = useNavigate();
+const BusinessInfoPage = () => {
+  const [businessName, setBusinessName] = useState('');
+  const [location, setLocation] = useState('');
+  const [hours, setHours] = useState('');
+  const [minEmployees, setMinEmployees] = useState('');
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem('token');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await saveBusinessInfo({ businessName, location, hours, minEmployees });
+      window.location.href = '/operations';
+    } catch (err) {
+      console.error(err.message);
+    }
+  };
 
-        await fetch('/api/business-profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ businessName, location }),
-        });
+  return (
+    <form onSubmit={handleSubmit} className="info-form">
+      <h2>Business Information</h2>
+      <input
+        type="text"
+        placeholder="Business Name"
+        value={businessName}
+        onChange={(e) => setBusinessName(e.target.value)}
+        required
+      />
+      <input
+        type="text"
+        placeholder="Location"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+        required
+      />
+      <input
+        type="text"
+        placeholder="Hours of Operation (e.g., 9AM - 5PM)"
+        value={hours}
+        onChange={(e) => setHours(e.target.value)}
+        required
+      />
+      <input
+        type="number"
+        placeholder="Minimum Employees Per Day"
+        value={minEmployees}
+        onChange={(e) => setMinEmployees(e.target.value)}
+        required
+      />
+      <button type="submit">Save & Continue</button>
+    </form>
+  );
+};
 
-        navigate('/operations-info');
-    };
-
-    return (
-        <form onSubmit={handleSubmit}>
-            <input type="text" placeholder="Business Name" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
-            <input type="text" placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} />
-            <button type="submit">Next</button>
-        </form>
-    );
-}
-
-export default BusinessInfo;
+export default BusinessInfoPage;
