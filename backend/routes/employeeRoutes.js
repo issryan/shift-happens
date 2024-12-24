@@ -3,6 +3,8 @@ const {
   getEmployees,
   addEmployee,
   deleteEmployee,
+  getAnalytics,
+  searchEmployees,
 } = require('../controllers/employeeController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { validateEmployee, validate } = require('../utils/validation');
