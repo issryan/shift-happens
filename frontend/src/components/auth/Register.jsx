@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { registerUser } from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 const Register = () => {
@@ -15,67 +16,62 @@ const Register = () => {
       return;
     }
     try {
-      console.log('Registering:', { name, email, password });
+      await registerUser({ name, email, password });
       navigate('/business-info');
     } catch (err) {
-      console.error('Error registering:', err.message);
+      console.error('Registration error:', err.message);
+      alert('Error registering user');
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-blue-600 mb-4">Register</h2>
-        <form onSubmit={handleRegister} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
-          >
-            Register
-          </button>
-        </form>
-        <p className="mt-4 text-center text-gray-600">
-          Already have an account?{' '}
-          <button
-            className="text-blue-500 hover:underline"
-            onClick={() => navigate('/login')}
-          >
-            Login here
-          </button>
-        </p>
-      </div>
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <form
+        onSubmit={handleRegister}
+        className="bg-white p-6 rounded shadow-md w-full max-w-md"
+      >
+        <h2 className="text-2xl font-semibold text-gray-700 text-center mb-6">
+          Register
+        </h2>
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="w-full p-2 mb-4 border rounded"
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full p-2 mb-4 border rounded"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="w-full p-2 mb-4 border rounded"
+        />
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          className="w-full p-2 mb-6 border rounded"
+        />
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+        >
+          Register
+        </button>
+      </form>
     </div>
   );
 };

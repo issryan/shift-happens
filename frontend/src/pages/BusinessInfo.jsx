@@ -1,56 +1,56 @@
 import React, { useState } from 'react';
-import { saveBusinessInfo } from '../utils/api';
+import { createBusiness } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
 
-const BusinessInfoPage = () => {
+const BusinessInfo = () => {
   const [businessName, setBusinessName] = useState('');
   const [location, setLocation] = useState('');
-  const [hours, setHours] = useState('');
-  const [minEmployees, setMinEmployees] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await saveBusinessInfo({ businessName, location, hours, minEmployees });
-      window.location.href = '/operations';
+      await createBusiness({ name: businessName, location });
+      navigate('/operations');
     } catch (err) {
-      console.error(err.message);
+      console.error('Error saving business info:', err.message);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="info-form">
-      <h2>Business Information</h2>
-      <input
-        type="text"
-        placeholder="Business Name"
-        value={businessName}
-        onChange={(e) => setBusinessName(e.target.value)}
-        required
-      />
-      <input
-        type="text"
-        placeholder="Location"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-        required
-      />
-      <input
-        type="text"
-        placeholder="Hours of Operation (e.g., 9AM - 5PM)"
-        value={hours}
-        onChange={(e) => setHours(e.target.value)}
-        required
-      />
-      <input
-        type="number"
-        placeholder="Minimum Employees Per Day"
-        value={minEmployees}
-        onChange={(e) => setMinEmployees(e.target.value)}
-        required
-      />
-      <button type="submit">Save & Continue</button>
-    </form>
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 rounded shadow-md w-full max-w-md"
+      >
+        <h2 className="text-2xl font-semibold text-gray-700 text-center mb-6">
+          Business Information
+        </h2>
+        <input
+          type="text"
+          placeholder="Business Name"
+          value={businessName}
+          onChange={(e) => setBusinessName(e.target.value)}
+          required
+          className="w-full p-2 mb-4 border rounded"
+        />
+        <input
+          type="text"
+          placeholder="Location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          required
+          className="w-full p-2 mb-6 border rounded"
+        />
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+        >
+          Save & Continue
+        </button>
+      </form>
+    </div>
   );
 };
 
-export default BusinessInfoPage;
+export default BusinessInfo;

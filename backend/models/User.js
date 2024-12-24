@@ -15,10 +15,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  isSetupComplete: {
-    type: Boolean,
-    default: false,
-  },
 }, { timestamps: true });
 
 UserSchema.pre('save', async function (next) {

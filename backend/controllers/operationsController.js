@@ -1,13 +1,32 @@
+const Business = require('../models/Business');
 const Operations = require('../models/Operations');
 
 exports.createOperations = async (req, res) => {
   try {
-    const { businessId, hours, minEmployeesPerDay } = req.body;
+    const { businessHours, minEmployeesPerDay } = req.body; // Use data from frontend
     const userId = req.user.id;
 
-    const newOperations = await Operations.create({ userId, businessId, hours, minEmployeesPerDay });
+    // Create business if it doesn't exist
+    let business = await Business.findOne({ userId });
+    if (!business) {
+      business = await Business.create({
+        userId,
+        name: 'Default Business Name', // Replace with appropriate name if available
+        location: 'Default Location',
+      });
+    }
+
+    // Create operations
+    const newOperations = await Operations.create({
+      userId,
+      businessId: business._id,
+      hours: businessHours,
+      minEmployeesPerDay,
+    });
+
     res.status(201).json(newOperations);
   } catch (error) {
+    console.error('Error creating operations:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
