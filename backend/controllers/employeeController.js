@@ -14,18 +14,13 @@ exports.getEmployees = async (req, res) => {
 // Add a new employee
 exports.addEmployee = async (req, res) => {
   try {
+    console.log('Employee Model:', Employee); // Debug the model
+    console.log('Request Body:', req.body); // Debug the incoming payload
+
     const { name, email, phone, availability, hoursRequired } = req.body;
 
-    // Validate availability structure
-    if (
-      !Array.isArray(availability) ||
-      availability.some(
-        slot => !slot.day || !slot.start || !slot.end
-      )
-    ) {
-      return res.status(400).json({
-        message: 'Invalid availability format. Ensure day, start, and end are provided.',
-      });
+    if (!Array.isArray(availability) || availability.some(slot => !slot.day || !slot.start || !slot.end)) {
+      return res.status(400).json({ message: 'Invalid availability format' });
     }
 
     const newEmployee = new Employee({
@@ -130,6 +125,35 @@ exports.searchEmployees = async (req, res) => {
     res.status(200).json(employees);
   } catch (err) {
     console.error('Error searching employees:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Update employee details
+exports.updateEmployee = async (req, res) => {
+  try {
+    const { name, email, phone, availability, hoursRequired } = req.body;
+    const employee = await Employee.findById(req.params.id);
+
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    if (employee.manager.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to update this employee' });
+    }
+
+    // Update fields
+    if (name) employee.name = name;
+    if (email) employee.email = email;
+    if (phone) employee.phone = phone;
+    if (availability) employee.availability = availability;
+    if (hoursRequired) employee.hoursRequired = hoursRequired;
+
+    await employee.save();
+    res.status(200).json(employee);
+  } catch (err) {
+    console.error('Error updating employee:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 };

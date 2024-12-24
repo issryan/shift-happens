@@ -5,6 +5,7 @@ const {
   deleteEmployee,
   getAnalytics,
   searchEmployees,
+  updateEmployee,
 } = require('../controllers/employeeController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { validateEmployee, validate } = require('../utils/validation');
@@ -22,6 +23,9 @@ router.get('/search', authMiddleware, searchEmployees);
 
 // Add a new employee
 router.post('/', authMiddleware, validateEmployee, validate, addEmployee);
+
+// Update employee details
+router.put('/:id', authMiddleware, updateEmployee);
 
 // Delete an employee
 router.delete('/:id', authMiddleware, deleteEmployee);

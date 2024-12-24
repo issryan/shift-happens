@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const EmployeeSchema = new mongoose.Schema({
   manager: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', 
+    ref: "User",
     required: true,
   },
   name: {
@@ -21,7 +21,7 @@ const EmployeeSchema = new mongoose.Schema({
   availability: [
     {
       day: {
-        type: String, // e.g., "Monday"
+        type: String, // e.g., "Mon"
         required: true,
       },
       start: {
@@ -29,19 +29,19 @@ const EmployeeSchema = new mongoose.Schema({
         required: true,
       },
       end: {
-        type: String, // e.g., "13:00"
+        type: String, // e.g., "17:00"
         required: true,
       },
     },
   ],
   hoursRequired: {
-    type: Number, 
+    type: Number,
     default: 0,
   },
   timeOff: {
-    type: [String], 
+    type: [String],
     default: [],
   },
-}, { timestamps: true });
+});
 
 module.exports = mongoose.model('Employee', EmployeeSchema);

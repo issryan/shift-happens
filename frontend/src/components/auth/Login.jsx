@@ -10,11 +10,14 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await loginUser({ email, password });
+      const loginPayload = { email, password };
+      console.log('Login Payload:', loginPayload); // Debug payload
+      const res = await loginUser(loginPayload);
+      console.log('Login Response:', res); // Debug response
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err.message);
-      alert('Invalid credentials');
+      alert('Invalid email or password.');
     }
   };
 

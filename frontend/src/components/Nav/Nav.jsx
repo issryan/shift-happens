@@ -10,7 +10,7 @@ const Navbar = () => {
     };
 
     const signupNavigate = () => {
-      navigate("/signup");
+      navigate("/register");
     };
 
   return (

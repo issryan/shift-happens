@@ -9,25 +9,32 @@ exports.validateUserRegistration = [
 
 // Validation rules for adding an employee
 exports.validateEmployee = [
-  check('name').notEmpty().withMessage('Name is required'),
-  check('email')
+  body("name").notEmpty().withMessage("Name is required"),
+  body("email")
     .optional()
     .isEmail()
-    .withMessage('Must be a valid email'),
-  check('phone')
+    .withMessage("Must be a valid email"),
+  body("phone")
     .optional()
     .isMobilePhone()
-    .withMessage('Must be a valid phone number'),
-  check('availability')
+    .withMessage("Must be a valid phone number"),
+  body("availability")
     .isArray({ min: 1 })
-    .withMessage('Availability must be an array with at least one value'),
-  check('hoursRequired')
-    .isInt({ min: 0 })
-    .withMessage('Hours required must be a positive number'),
+    .withMessage("Availability must be an array with at least one entry")
+    .custom((value) => {
+      if (
+        value.some(
+          (slot) => !slot.day || !slot.start || !slot.end
+        )
+      ) {
+        throw new Error(
+          "Each availability entry must include day, start, and end times"
+        );
+      }
+      return true;
+    }),
 ];
 
-
-// Middleware to handle validation errors
 exports.validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

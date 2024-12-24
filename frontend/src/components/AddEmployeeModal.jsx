@@ -1,100 +1,154 @@
-import React, { useState } from 'react';
-import CustomTimePicker from './CustomTimePicker';
+import React, { useState } from "react";
+import { addEmployee } from "../utils/api";
 
-const AddEmployeeModal = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  newEmployee,
-  handleInputChange,
-}) => {
+const EmployeeModal = ({ onClose, onAdd }) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [availability, setAvailability] = useState({
-    Monday: { start: '', end: '' },
-    Tuesday: { start: '', end: '' },
-    Wednesday: { start: '', end: '' },
-    Thursday: { start: '', end: '' },
-    Friday: { start: '', end: '' },
+    Mon: { start: "", end: "", copyAbove: false },
+    Tue: { start: "", end: "", copyAbove: false },
+    Wed: { start: "", end: "", copyAbove: false },
+    Thu: { start: "", end: "", copyAbove: false },
+    Fri: { start: "", end: "", copyAbove: false },
+    Sat: { start: "", end: "", copyAbove: false },
+    Sun: { start: "", end: "", copyAbove: false },
   });
-  const [selectedDay, setSelectedDay] = useState('Monday'); 
 
-  const handleSaveAvailability = (day, data) => {
-    setAvailability((prev) => ({ ...prev, [day]: data }));
+  const handleAvailabilityChange = (day, key, value) => {
+    setAvailability((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], [key]: value, copyAbove: false },
+    }));
   };
 
-  const handleSubmit = () => {
-    const employeeData = { ...newEmployee, availability };
-    onSubmit(employeeData);
+  const handleCopyAbove = (day) => {
+    const days = Object.keys(availability);
+    const currentIndex = days.indexOf(day);
+
+    if (currentIndex > 0) {
+      const previousDay = days[currentIndex - 1];
+      setAvailability((prev) => ({
+        ...prev,
+        [day]: {
+          ...prev[day],
+          start: prev[previousDay].start,
+          end: prev[previousDay].end,
+          copyAbove: !prev[day].copyAbove,
+        },
+      }));
+    }
   };
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Filter out empty availability rows
+      const filteredAvailability = Object.entries(availability)
+        .filter(([, value]) => value.start && value.end)
+        .map(([day, { start, end }]) => ({ day, start, end }));
 
-  if (!isOpen) return null;
+      const payload = {
+        name,
+        email,
+        phone,
+        availability: filteredAvailability,
+      };
+
+      console.log("Payload being sent:", payload); // Debugging
+
+      await addEmployee(payload);
+      onAdd(payload);
+      onClose();
+    } catch (err) {
+      console.error("Error adding employee:", err.message); // Debugging
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-screen overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4">Add New Employee</h2>
-        <input
-          type="text"
-          name="name"
-          value={newEmployee.name}
-          onChange={(e) => handleInputChange(e)}
-          placeholder="Employee Name"
-          className="w-full p-2 border rounded mb-4"
-        />
-        <h3 className="text-lg font-semibold mb-2">Set Availability</h3>
-        
-        {/* Tabs for Days of the Week */}
-        <div className="flex space-x-2 mb-4">
-          {days.map((day) => (
-            <button
-              key={day}
-              onClick={() => setSelectedDay(day)}
-              className={`px-4 py-2 rounded ${
-                selectedDay === day
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {day}
-            </button>
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+      <div className="bg-white p-6 rounded shadow-lg w-full max-w-3xl">
+        <h2 className="text-lg font-bold mb-4">Add Employee</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-2 border rounded"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Email (optional)</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Phone (optional)</label>
+            <input
+              type="text"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+
+          <h3 className="text-md font-semibold text-gray-700 mb-2">Availability</h3>
+          {Object.keys(availability).map((day) => (
+            <div key={day} className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="w-1/6 text-gray-600 font-medium">{day}</label>
+                <div className="flex gap-2 w-2/3">
+                  <input
+                    type="time"
+                    value={availability[day].start}
+                    onChange={(e) => handleAvailabilityChange(day, "start", e.target.value)}
+                    className="p-2 border rounded w-1/2"
+                  />
+                  <input
+                    type="time"
+                    value={availability[day].end}
+                    onChange={(e) => handleAvailabilityChange(day, "end", e.target.value)}
+                    className="p-2 border rounded w-1/2"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={availability[day].copyAbove}
+                    onChange={() => handleCopyAbove(day)}
+                  />
+                  <span className="text-gray-600 text-sm">Copy Above</span>
+                </div>
+              </div>
+            </div>
           ))}
-        </div>
 
-        {/* Custom Time Picker for Selected Day */}
-        <CustomTimePicker
-          day={selectedDay}
-          availability={availability[selectedDay]}
-          onSave={(data) => handleSaveAvailability(selectedDay, data)}
-        />
-
-        <select
-          name="status"
-          value={newEmployee.status}
-          onChange={(e) => handleInputChange(e)}
-          className="w-full p-2 border rounded mb-4"
-        >
-          <option value="Available">Available</option>
-          <option value="On Leave">On Leave</option>
-          <option value="Sick">Sick</option>
-        </select>
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={onClose}
-            className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-          >
-            Save
-          </button>
-        </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-600 hover:underline mr-4"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+            >
+              Add Employee
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
 
-export default AddEmployeeModal;
+export default EmployeeModal;

@@ -13,11 +13,16 @@ export const registerUser = async (userData) => {
 
 // Login user
 export const loginUser = async (loginData) => {
-    const res = await axios.post(`${API_BASE_URL}/auth/login`, loginData, {
-        headers: { 'Content-Type': 'application/json' },
-    });
-    localStorage.setItem('token', res.data.token);
-    return res.data;
+    try {
+        const res = await axios.post(`${API_BASE_URL}/auth/login`, loginData, {
+            headers: { 'Content-Type': 'application/json' },
+        });
+        localStorage.setItem('token', res.data.token);
+        return res.data;
+    } catch (error) {
+        console.error('Error during login:', error.response?.data || error.message);
+        throw error;
+    }
 };
 
 // Create business
@@ -47,6 +52,26 @@ export const getUserProfile = async () => {
     const token = localStorage.getItem('token');
     if (!token) throw new Error('No token found');
     const res = await axios.get(`${API_BASE_URL}/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+};
+
+// Get employees
+export const getEmployees = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+    const res = await axios.get(`${API_BASE_URL}/employees`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+};
+
+// Add an employee
+export const addEmployee = async (employeeData) => {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+    const res = await axios.post(`${API_BASE_URL}/employees`, employeeData, {
         headers: { Authorization: `Bearer ${token}` },
     });
     return res.data;
