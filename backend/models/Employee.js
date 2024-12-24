@@ -18,10 +18,22 @@ const EmployeeSchema = new mongoose.Schema({
   phone: {
     type: String,
   },
-  availability: {
-    type: [String], 
-    required: true,
-  },
+  availability: [
+    {
+      day: {
+        type: String, // e.g., "Monday"
+        required: true,
+      },
+      start: {
+        type: String, // e.g., "09:00"
+        required: true,
+      },
+      end: {
+        type: String, // e.g., "13:00"
+        required: true,
+      },
+    },
+  ],
   hoursRequired: {
     type: Number, 
     default: 0,

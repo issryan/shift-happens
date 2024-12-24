@@ -12,6 +12,12 @@ const router = express.Router();
 // Get all employees for the logged-in manager
 router.get('/', authMiddleware, getEmployees);
 
+// Get analytics for manager
+router.get('/analytics', authMiddleware, getAnalytics);
+
+// Search employees
+router.get('/search', authMiddleware, searchEmployees);
+
 // Add a new employee
 router.post('/', authMiddleware, validateEmployee, validate, addEmployee);
 
