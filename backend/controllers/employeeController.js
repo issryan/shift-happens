@@ -19,8 +19,8 @@ exports.addEmployee = async (req, res) => {
     const newEmployee = new Employee({
       manager: req.user.id,
       name,
-      email,
-      phone,
+      email, // Optional
+      phone, // Optional
       availability,
       hoursRequired,
     });

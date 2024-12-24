@@ -9,10 +9,23 @@ exports.validateUserRegistration = [
 
 // Validation rules for adding an employee
 exports.validateEmployee = [
-  body('name').notEmpty().withMessage('Employee name is required'),
-  body('availability').isArray().withMessage('Availability must be an array of days'),
-  body('hoursRequired').isNumeric().withMessage('Hours required must be a number').optional(),
+  check('name').notEmpty().withMessage('Name is required'),
+  check('email')
+    .optional()
+    .isEmail()
+    .withMessage('Must be a valid email'),
+  check('phone')
+    .optional()
+    .isMobilePhone()
+    .withMessage('Must be a valid phone number'),
+  check('availability')
+    .isArray({ min: 1 })
+    .withMessage('Availability must be an array with at least one value'),
+  check('hoursRequired')
+    .isInt({ min: 0 })
+    .withMessage('Hours required must be a positive number'),
 ];
+
 
 // Middleware to handle validation errors
 exports.validate = (req, res, next) => {

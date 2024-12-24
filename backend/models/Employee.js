@@ -13,6 +13,7 @@ const EmployeeSchema = new mongoose.Schema({
   email: {
     type: String,
     unique: true,
+    sparse: true,
   },
   phone: {
     type: String,
