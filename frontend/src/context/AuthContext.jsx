@@ -5,8 +5,8 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState({ isAuthenticated: false, user: null });
+  const [loading, setLoading] = useState(true); // Add loading state
 
-  // Check for authenticated user on initial load
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -15,32 +15,32 @@ export const AuthProvider = ({ children }) => {
       } catch (err) {
         console.error('Authentication check failed:', err.message);
         localStorage.removeItem('token');
+      } finally {
+        setLoading(false); // Set loading to false when auth check completes
       }
     };
 
     checkAuth();
   }, []);
 
-  // Login function
   const login = async (email, password) => {
     try {
       const { token, user } = await loginUser({ email, password });
-      localStorage.setItem('token', token); // Save token to local storage
-      setAuth({ isAuthenticated: true, user }); // Update context state
+      localStorage.setItem('token', token);
+      setAuth({ isAuthenticated: true, user });
     } catch (err) {
       console.error('Login failed:', err.message);
-      throw err; // Re-throw error to be handled in the login page
+      throw err;
     }
   };
 
-  // Logout function
   const logout = () => {
-    localStorage.removeItem('token'); // Clear token from local storage
-    setAuth({ isAuthenticated: false, user: null }); // Reset context state
+    localStorage.removeItem('token');
+    setAuth({ isAuthenticated: false, user: null });
   };
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout }}>
+    <AuthContext.Provider value={{ auth, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

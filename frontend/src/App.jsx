@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
@@ -14,9 +15,14 @@ import Schedule from './components/schedule/Schedule';
 import Exports from './components/exports/Exports';
 import Profile from './pages/Profile';
 
-// Protected Route Wrapper
+// Protected Route Component
 const ProtectedRoute = ({ element }) => {
-  const { auth } = useContext(AuthContext);
+  const { auth, loading } = useContext(AuthContext);
+
+  if (loading) {
+    return <div>Loading...</div>; // Show a loading spinner or placeholder
+  }
+
   return auth.isAuthenticated ? element : <Navigate to="/login" />;
 };
 
@@ -25,6 +31,7 @@ const App = () => {
     <AuthProvider>
       <Router>
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
