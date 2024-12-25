@@ -11,12 +11,12 @@ const EmployeeSchema = new mongoose.Schema({
     required: true,
   },
   email: {
-    type: String,
-    unique: true,
-    sparse: true,
+    type: String, 
+    default: null
   },
   phone: {
-    type: String,
+    type: String, 
+    default: null
   },
   availability: [
     {

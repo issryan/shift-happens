@@ -69,10 +69,19 @@ export const getEmployees = async () => {
 
 // Add an employee
 export const addEmployee = async (employeeData) => {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No token found');
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No token found");
     const res = await axios.post(`${API_BASE_URL}/employees`, employeeData, {
-        headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     return res.data;
-};
+  };
+
+  export const getOperations = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('No token found');
+    const res = await axios.get(`${API_BASE_URL}/operations`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  };

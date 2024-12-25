@@ -14,13 +14,12 @@ exports.getEmployees = async (req, res) => {
 // Add a new employee
 exports.addEmployee = async (req, res) => {
   try {
-    console.log('Employee Model:', Employee); // Debug the model
-    console.log('Request Body:', req.body); // Debug the incoming payload
+    console.log("Request Body:", req.body);
 
-    const { name, email, phone, availability, hoursRequired } = req.body;
+    const { name, email = null, phone = null, availability, hoursRequired = 0 } = req.body;
 
-    if (!Array.isArray(availability) || availability.some(slot => !slot.day || !slot.start || !slot.end)) {
-      return res.status(400).json({ message: 'Invalid availability format' });
+    if (!name || !availability) {
+      return res.status(400).json({ message: "Name and availability are required" });
     }
 
     const newEmployee = new Employee({
@@ -35,8 +34,8 @@ exports.addEmployee = async (req, res) => {
     await newEmployee.save();
     res.status(201).json(newEmployee);
   } catch (err) {
-    console.error('Error adding employee:', err.message);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error adding employee:", err.message);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

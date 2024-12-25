@@ -11,11 +11,11 @@ exports.validateUserRegistration = [
 exports.validateEmployee = [
   body("name").notEmpty().withMessage("Name is required"),
   body("email")
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isEmail()
     .withMessage("Must be a valid email"),
   body("phone")
-    .optional()
+    .optional({ nullable: true, checkFalsy: true }) 
     .isMobilePhone()
     .withMessage("Must be a valid phone number"),
   body("availability")
@@ -33,6 +33,9 @@ exports.validateEmployee = [
       }
       return true;
     }),
+  body("hoursRequired")
+    .isInt({ min: 0 })
+    .withMessage("Hours required must be a non-negative integer"),
 ];
 
 exports.validate = (req, res, next) => {
