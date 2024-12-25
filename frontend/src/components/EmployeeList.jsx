@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getEmployees, updateEmployee } from "../utils/api";
+import { getEmployees } from "../utils/api";
 import AddEmployeeModal from "./AddEmployeeModal";
 import EditEmployeeModal from "./EditEmployeeModal";
 
@@ -9,53 +9,47 @@ const EmployeeList = () => {
   const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const employeesData = await getEmployees();
-        setEmployees(employeesData);
-      } catch (err) {
-        console.error("Error fetching employees:", err.message);
-      }
-    };
+  // Fetch employees from backend
+  const fetchEmployees = async () => {
+    try {
+      const employeesData = await getEmployees();
+      setEmployees(employeesData);
+    } catch (err) {
+      console.error("Error fetching employees:", err.message);
+    }
+  };
 
+  useEffect(() => {
     fetchEmployees();
   }, []);
 
-  const handleAddEmployee = (newEmployee) => {
-    setEmployees((prev) => [...prev, newEmployee]);
+  // Add new employee to the list
+  const handleAddEmployee = () => {
+    // Re-fetch employees to ensure the list is up-to-date
+    fetchEmployees();
   };
 
-  const handleEditEmployee = (updatedEmployee) => {
-    setEmployees((prev) =>
-      prev.map((employee) =>
-        employee._id === updatedEmployee._id ? updatedEmployee : employee
-      )
-    );
+  // Update employee in the list
+  const handleEditEmployee = () => {
+    // Re-fetch employees to ensure the list is up-to-date
+    fetchEmployees();
   };
 
+  // Open edit modal
   const openEditModal = (employee) => {
     setSelectedEmployee(employee);
     setIsEditEmployeeModalOpen(true);
   };
 
+  // Close edit modal
   const closeEditModal = () => {
     setSelectedEmployee(null);
     setIsEditEmployeeModalOpen(false);
   };
 
-  const handleUpdateEmployee = async (updatedData) => {
-    try {
-      const updatedEmployee = await updateEmployee(selectedEmployee._id, updatedData);
-      handleEditEmployee(updatedEmployee);
-      closeEditModal();
-    } catch (err) {
-      console.error("Error updating employee:", err.message);
-    }
-  };
-
   return (
     <div className="bg-white p-6 shadow-lg rounded-lg">
+      {/* Header and Add Employee Button */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold">Employee List</h3>
         <button
@@ -65,12 +59,16 @@ const EmployeeList = () => {
           Add Employee
         </button>
       </div>
+
+      {/* Add Employee Modal */}
       {isAddEmployeeModalOpen && (
         <AddEmployeeModal
           onClose={() => setIsAddEmployeeModalOpen(false)}
           onAdd={handleAddEmployee}
         />
       )}
+
+      {/* Edit Employee Modal */}
       {isEditEmployeeModalOpen && selectedEmployee && (
         <EditEmployeeModal
           employee={selectedEmployee}
@@ -78,6 +76,8 @@ const EmployeeList = () => {
           onUpdate={handleEditEmployee}
         />
       )}
+
+      {/* Employee Table */}
       <table className="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
         <thead className="bg-gray-100 text-left">
           <tr>
@@ -96,15 +96,19 @@ const EmployeeList = () => {
               <td className="p-3 border-b">{employee.phone || "N/A"}</td>
               <td className="p-3 border-b">{employee.status || "N/A"}</td>
               <td className="p-3 border-b flex gap-2">
+                {/* Edit Button */}
                 <button
                   className="bg-yellow-400 text-white py-1 px-3 rounded hover:bg-yellow-500"
                   onClick={() => openEditModal(employee)}
                 >
                   Edit
                 </button>
+                {/* Delete Button */}
                 <button
                   className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
-                  onClick={() => setEmployees((prev) => prev.filter((e) => e._id !== employee._id))}
+                  onClick={() =>
+                    setEmployees((prev) => prev.filter((e) => e._id !== employee._id))
+                  }
                 >
                   Delete
                 </button>
@@ -113,6 +117,8 @@ const EmployeeList = () => {
           ))}
         </tbody>
       </table>
+
+      {/* No employees message */}
       {employees.length === 0 && (
         <p className="text-center text-gray-500 mt-4">No employees found</p>
       )}
