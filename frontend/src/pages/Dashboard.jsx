@@ -34,21 +34,31 @@ const Dashboard = () => {
     try {
       const employeesData = await getEmployees();
       setEmployees(employeesData);
+      fetchAnalytics(); // Fetch analytics whenever employees change
     } catch (err) {
       console.error("Error fetching employees:", err.message);
     }
   };
 
   useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const employeesData = await getEmployees();
+        setEmployees(employeesData);
+        fetchAnalytics(); // Fetch analytics whenever employees change
+      } catch (err) {
+        console.error("Error fetching employees:", err.message);
+      }
+    };
+  
     fetchEmployees();
-    fetchAnalytics();
   }, []);
 
   // Handle employee deletion
   const handleDelete = async (id) => {
     try {
       await deleteEmployee(id);
-      fetchEmployees(); // Refresh employee list after deletion
+      fetchEmployees(); // Refresh both employees and analytics after deletion
     } catch (err) {
       console.error("Error deleting employee:", err.message);
     }
@@ -58,7 +68,7 @@ const Dashboard = () => {
   const handleEdit = async (id, updatedData) => {
     try {
       await updateEmployee(id, updatedData);
-      fetchEmployees(); // Refresh employee list after editing
+      fetchEmployees(); // Refresh both employees and analytics after editing
     } catch (err) {
       console.error("Error updating employee:", err.message);
     }

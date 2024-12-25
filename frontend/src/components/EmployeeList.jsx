@@ -1,39 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { getEmployees } from "../utils/api";
+import React, { useState } from "react";
 import AddEmployeeModal from "./AddEmployeeModal";
 import EditEmployeeModal from "./EditEmployeeModal";
 
-const EmployeeList = () => {
-  const [employees, setEmployees] = useState([]);
+const EmployeeList = ({ employees, handleEdit, handleDelete, fetchEmployees }) => {
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
   const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-
-  // Fetch employees from backend
-  const fetchEmployees = async () => {
-    try {
-      const employeesData = await getEmployees();
-      setEmployees(employeesData);
-    } catch (err) {
-      console.error("Error fetching employees:", err.message);
-    }
-  };
-
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  // Add new employee to the list
-  const handleAddEmployee = () => {
-    // Re-fetch employees to ensure the list is up-to-date
-    fetchEmployees();
-  };
-
-  // Update employee in the list
-  const handleEditEmployee = () => {
-    // Re-fetch employees to ensure the list is up-to-date
-    fetchEmployees();
-  };
 
   // Open edit modal
   const openEditModal = (employee) => {
@@ -64,7 +36,7 @@ const EmployeeList = () => {
       {isAddEmployeeModalOpen && (
         <AddEmployeeModal
           onClose={() => setIsAddEmployeeModalOpen(false)}
-          onAdd={handleAddEmployee}
+          onAdd={fetchEmployees}
         />
       )}
 
@@ -73,7 +45,7 @@ const EmployeeList = () => {
         <EditEmployeeModal
           employee={selectedEmployee}
           onClose={closeEditModal}
-          onUpdate={handleEditEmployee}
+          onUpdate={fetchEmployees} // Refresh employees after editing
         />
       )}
 
@@ -84,7 +56,8 @@ const EmployeeList = () => {
             <th className="p-3 border-b">Name</th>
             <th className="p-3 border-b">Email</th>
             <th className="p-3 border-b">Phone</th>
-            <th className="p-3 border-b">Status</th>
+            <th className="p-3 border-b">Hours Required</th>
+            <th className="p-3 border-b">Availability</th>
             <th className="p-3 border-b">Actions</th>
           </tr>
         </thead>
@@ -94,7 +67,12 @@ const EmployeeList = () => {
               <td className="p-3 border-b">{employee.name}</td>
               <td className="p-3 border-b">{employee.email || "N/A"}</td>
               <td className="p-3 border-b">{employee.phone || "N/A"}</td>
-              <td className="p-3 border-b">{employee.status || "N/A"}</td>
+              <td className="p-3 border-b">{employee.hoursRequired || "N/A"} hrs</td>
+              <td className="p-3 border-b">
+                {employee.availability
+                  .map((a) => `${a.day}: ${a.start}-${a.end}`)
+                  .join(", ")}
+              </td>
               <td className="p-3 border-b flex gap-2">
                 {/* Edit Button */}
                 <button
@@ -106,9 +84,7 @@ const EmployeeList = () => {
                 {/* Delete Button */}
                 <button
                   className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
-                  onClick={() =>
-                    setEmployees((prev) => prev.filter((e) => e._id !== employee._id))
-                  }
+                  onClick={() => handleDelete(employee._id)}
                 >
                   Delete
                 </button>
