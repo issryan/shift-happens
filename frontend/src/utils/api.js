@@ -95,3 +95,15 @@ export const updateEmployee = async (employeeId, updatedData) => {
   });
   return res.data;
 };
+
+// Get analytics for the dashboard
+export const getAnalytics = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+
+  const res = await axios.get(`${API_BASE_URL}/employees/analytics`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return res.data;
+};

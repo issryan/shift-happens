@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getEmployees, deleteEmployee, updateEmployee } from "../utils/api";
+import { getEmployees, getAnalytics, deleteEmployee, updateEmployee } from "../utils/api";
 import EmployeeList from "../components/EmployeeList";
 import {
   ChartComponent,
@@ -8,35 +8,40 @@ import {
   Inject as ChartInject,
   ColumnSeries,
   Category,
+  Tooltip,
+  Legend,
+  DataLabel,
 } from "@syncfusion/ej2-react-charts";
 
 const Dashboard = () => {
   const [employees, setEmployees] = useState([]);
-  const [stats, setStats] = useState({
+  const [analytics, setAnalytics] = useState({
     totalEmployees: 0,
-    onLeave: 0,
-    staffed: 0,
+    staffingStatus: [],
     alerts: 0,
   });
+
+  const fetchAnalytics = async () => {
+    try {
+      const analyticsData = await getAnalytics();
+      setAnalytics(analyticsData);
+    } catch (err) {
+      console.error("Error fetching analytics:", err.message);
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
       const employeesData = await getEmployees();
       setEmployees(employeesData);
-
-      // Calculate stats
-      const total = employeesData.length;
-      const onLeave = employeesData.filter((e) => e.status === "On Leave").length;
-      const staffed = employeesData.filter((e) => e.status === "Available").length;
-      const alerts = 3; // Placeholder for alert logic to be implemented later
-      setStats({ totalEmployees: total, onLeave, staffed, alerts });
     } catch (err) {
-      console.error("Error fetching data:", err.message);
+      console.error("Error fetching employees:", err.message);
     }
   };
 
   useEffect(() => {
     fetchEmployees();
+    fetchAnalytics();
   }, []);
 
   // Handle employee deletion
@@ -59,16 +64,6 @@ const Dashboard = () => {
     }
   };
 
-  const staffingChartData = [
-    { day: "Mon", Assigned: 8, Required: 10 },
-    { day: "Tue", Assigned: 9, Required: 10 },
-    { day: "Wed", Assigned: 10, Required: 10 },
-    { day: "Thu", Assigned: 7, Required: 10 },
-    { day: "Fri", Assigned: 8, Required: 10 },
-    { day: "Sat", Assigned: 5, Required: 5 },
-    { day: "Sun", Assigned: 3, Required: 5 },
-  ];
-
   return (
     <div className="p-6 space-y-6">
       {/* Top Action Buttons */}
@@ -88,19 +83,23 @@ const Dashboard = () => {
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-gray-100 shadow-md rounded-lg p-4 flex flex-col items-center">
           <h3 className="text-lg font-semibold">Total Employees</h3>
-          <p className="text-2xl font-bold">{stats.totalEmployees}</p>
+          <p className="text-2xl font-bold">{analytics.totalEmployees}</p>
         </div>
         <div className="bg-gray-100 shadow-md rounded-lg p-4 flex flex-col items-center">
-          <h3 className="text-lg font-semibold">On Leave</h3>
-          <p className="text-2xl font-bold">{stats.onLeave}</p>
+          <h3 className="text-lg font-semibold">Understaffed Days</h3>
+          <p className="text-2xl font-bold">
+            {analytics.staffingStatus.filter((day) => day.status === "understaffed").length}
+          </p>
         </div>
         <div className="bg-gray-100 shadow-md rounded-lg p-4 flex flex-col items-center">
-          <h3 className="text-lg font-semibold">Staffed</h3>
-          <p className="text-2xl font-bold">{stats.staffed}</p>
+          <h3 className="text-lg font-semibold">Sufficiently Staffed</h3>
+          <p className="text-2xl font-bold">
+            {analytics.staffingStatus.filter((day) => day.status === "sufficient").length}
+          </p>
         </div>
         <div className="bg-gray-100 shadow-md rounded-lg p-4 flex flex-col items-center">
           <h3 className="text-lg font-semibold">Alerts</h3>
-          <p className="text-2xl font-bold">{stats.alerts}</p>
+          <p className="text-2xl font-bold">{analytics.alerts}</p>
         </div>
       </div>
 
@@ -111,23 +110,26 @@ const Dashboard = () => {
           id="charts"
           primaryXAxis={{ valueType: "Category", title: "Days" }}
           primaryYAxis={{ title: "Employees" }}
+          legendSettings={{ visible: true }} // Enable legend
           tooltip={{ enable: true }}
         >
-          <ChartInject services={[ColumnSeries, Category]} />
+          <ChartInject services={[ColumnSeries, Category, Tooltip, Legend, DataLabel]} />
           <SeriesCollectionDirective>
             <SeriesDirective
-              dataSource={staffingChartData}
+              dataSource={analytics.staffingStatus}
               xName="day"
-              yName="Assigned"
-              name="Assigned"
+              yName="staffCount"
+              name="Actual Staff"
               type="Column"
+              marker={{ dataLabel: { visible: true } }}
             />
             <SeriesDirective
-              dataSource={staffingChartData}
+              dataSource={analytics.staffingStatus}
               xName="day"
-              yName="Required"
-              name="Required"
+              yName="needed"
+              name="Required Staff"
               type="Column"
+              marker={{ dataLabel: { visible: true } }}
             />
           </SeriesCollectionDirective>
         </ChartComponent>

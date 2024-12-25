@@ -1,4 +1,5 @@
 const Employee = require('../models/Employee');
+const Operations = require('../models/Operations');
 
 // Get all employees for the logged-in manager
 exports.getEmployees = async (req, res) => {
@@ -69,36 +70,40 @@ exports.getAnalytics = async (req, res) => {
     // Calculate total employees
     const totalEmployees = employees.length;
 
-    // Calculate availability
+    // Calculate availability stats
     const availabilityStats = employees.reduce((acc, employee) => {
-      employee.availability.forEach(({ day, start, end }) => {
-        acc[day] = acc[day] || [];
-        acc[day].push({ start, end });
+      employee.availability.forEach(({ day }) => {
+        acc[day] = acc[day] || 0;
+        acc[day]++;
       });
       return acc;
     }, {});
 
-    // Calculate overstaffing/understaffing
-    const operations = await Operations.findOne({ manager: req.user.id });
-    const staffingStatus = Object.keys(availabilityStats).map(day => {
-      const staffCount = availabilityStats[day].length;
-      const needed = operations.minimumEmployeesPerDay[day] || 0;
-      return {
-        day,
-        staffCount,
-        needed,
-        status: staffCount < needed ? 'understaffed' : 'sufficient',
-      };
+    // Fetch required staffing per day from operations
+    const operations = await Operations.findOne({ userId: req.user.id });
+
+    if (!operations) {
+      return res.status(404).json({ message: "Operations not defined for the manager." });
+    }
+
+    const minEmployeesPerDay = Object.fromEntries(operations.minEmployeesPerDay); // Convert Map to object
+
+    const staffingStatus = Object.keys(minEmployeesPerDay).map((day) => {
+      const required = minEmployeesPerDay[day] || 0;
+      const assigned = availabilityStats[day] || 0;
+      const status = assigned < required ? "understaffed" : "sufficient";
+
+      return { day, staffCount: assigned, needed: required, status };
     });
 
     res.status(200).json({
       totalEmployees,
-      availabilityStats,
       staffingStatus,
+      alerts: staffingStatus.filter((day) => day.status === "understaffed").length,
     });
   } catch (err) {
-    console.error('Error fetching analytics:', err.message);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching analytics:", err.message);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
