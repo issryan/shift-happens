@@ -56,3 +56,14 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Get authenticated user
+exports.getAuthenticatedUser = async (req, res) => {
+  try {
+    const { id, name, email } = req.user; 
+    res.status(200).json({ id, name, email });
+  } catch (err) {
+    console.error('Error fetching user:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

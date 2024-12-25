@@ -9,6 +9,14 @@ const getAuthHeaders = () => {
   return { Authorization: `Bearer ${token}` };
 };
 
+// Get authenticated user
+export const getAuthenticatedUser = async () => {
+  const res = await axios.get(`${API_BASE_URL}/auth/me`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
 //register new user
 export const registerUser = async (userData) => {
   const res = await axios.post(`${API_BASE_URL}/auth/register`, userData, {

@@ -1,5 +1,6 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, AuthContext } from './context/AuthContext';
 import Home from './pages/Home';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
@@ -13,33 +14,31 @@ import Schedule from './components/schedule/Schedule';
 import Exports from './components/exports/Exports';
 import Profile from './pages/Profile';
 
+// Protected Route Wrapper
+const ProtectedRoute = ({ element }) => {
+  const { auth } = useContext(AuthContext);
+  return auth.isAuthenticated ? element : <Navigate to="/login" />;
+};
+
 const App = () => {
-  const isAuthenticated = true; // Replace with your authentication logic
-
   return (
-    <Router>
-      {/* Display Navbar only for authenticated users */}
-      {isAuthenticated && <Navbar />}
-      
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/business-info" element={<BusinessInfoPage />} />
-        <Route path="/operations" element={<OperationsInfo />} />
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/business-info" element={<BusinessInfoPage />} />
+          <Route path="/operations" element={<OperationsInfo />} />
 
-        {/* Authenticated Routes */}
-        {isAuthenticated && (
-          <>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/exports" element={<Exports />} />
-            <Route path="/profile" element={<Profile />} />
-          </>
-        )}
-      </Routes>
-    </Router>
+          {/* Authenticated routes */}
+          <Route path="/dashboard" element={<ProtectedRoute element={<><Navbar /><DashboardPage /></>} />} />
+          <Route path="/schedule" element={<ProtectedRoute element={<><Navbar /><Schedule /></>} />} />
+          <Route path="/exports" element={<ProtectedRoute element={<><Navbar /><Exports /></>} />} />
+          <Route path="/profile" element={<ProtectedRoute element={<><Navbar /><Profile /></>} />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 };
 
