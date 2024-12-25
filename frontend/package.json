@@ -5,6 +5,8 @@
   "dependencies": {
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@syncfusion/ej2-base": "^28.1.33",
+    "@syncfusion/ej2-react-charts": "^28.1.36",
+    "@syncfusion/ej2-react-grids": "^28.1.36",
     "@syncfusion/ej2-react-schedule": "^28.1.35",
     "axios": "^1.7.9",
     "cra-template": "1.2.0",

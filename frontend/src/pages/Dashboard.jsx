@@ -1,121 +1,145 @@
 import React, { useState, useEffect } from "react";
-import { getEmployees, addEmployee, deleteEmployee, updateEmployee } from "../utils/api";
-import AddEmployeeModal from "../components/AddEmployeeModal";
-import EditEmployeeModal from "../components/EditEmployeeModal";
+import { getEmployees, deleteEmployee, updateEmployee } from "../utils/api";
+import EmployeeList from "../components/EmployeeList";
+import {
+  ChartComponent,
+  SeriesCollectionDirective,
+  SeriesDirective,
+  Inject as ChartInject,
+  ColumnSeries,
+  Category,
+} from "@syncfusion/ej2-react-charts";
 
 const Dashboard = () => {
   const [employees, setEmployees] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [stats, setStats] = useState({
+    totalEmployees: 0,
+    onLeave: 0,
+    staffed: 0,
+    alerts: 0,
+  });
 
-  // Fetch employees on component mount
+  const fetchEmployees = async () => {
+    try {
+      const employeesData = await getEmployees();
+      setEmployees(employeesData);
+
+      // Calculate stats
+      const total = employeesData.length;
+      const onLeave = employeesData.filter((e) => e.status === "On Leave").length;
+      const staffed = employeesData.filter((e) => e.status === "Available").length;
+      const alerts = 3; // Placeholder for alert logic to be implemented later
+      setStats({ totalEmployees: total, onLeave, staffed, alerts });
+    } catch (err) {
+      console.error("Error fetching data:", err.message);
+    }
+  };
+
   useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const data = await getEmployees();
-        setEmployees(data);
-      } catch (err) {
-        console.error("Error fetching employees:", err.message);
-      }
-    };
     fetchEmployees();
   }, []);
 
-  const handleAddEmployee = async (employeeData) => {
+  // Handle employee deletion
+  const handleDelete = async (id) => {
     try {
-      await addEmployee(employeeData);
-      const updatedEmployees = await getEmployees();
-      setEmployees(updatedEmployees); // Update the list of employees
-      setShowAddModal(false);
-    } catch (err) {
-      console.error("Error adding employee:", err.message);
-    }
-  };
-
-  const handleEditEmployee = async (updatedEmployee) => {
-    try {
-      await updateEmployee(selectedEmployee._id, updatedEmployee);
-      const updatedEmployees = await getEmployees();
-      setEmployees(updatedEmployees); // Refresh the list of employees
-      setShowEditModal(false);
-    } catch (err) {
-      console.error("Error updating employee:", err.message);
-    }
-  };
-
-  const handleDeleteEmployee = async (employeeId) => {
-    try {
-      await deleteEmployee(employeeId);
-      setEmployees(employees.filter((employee) => employee._id !== employeeId));
+      await deleteEmployee(id);
+      fetchEmployees(); // Refresh employee list after deletion
     } catch (err) {
       console.error("Error deleting employee:", err.message);
     }
   };
 
-  const openEditModal = (employee) => {
-    setSelectedEmployee(employee);
-    setShowEditModal(true);
+  // Handle employee editing
+  const handleEdit = async (id, updatedData) => {
+    try {
+      await updateEmployee(id, updatedData);
+      fetchEmployees(); // Refresh employee list after editing
+    } catch (err) {
+      console.error("Error updating employee:", err.message);
+    }
   };
 
+  const staffingChartData = [
+    { day: "Mon", Assigned: 8, Required: 10 },
+    { day: "Tue", Assigned: 9, Required: 10 },
+    { day: "Wed", Assigned: 10, Required: 10 },
+    { day: "Thu", Assigned: 7, Required: 10 },
+    { day: "Fri", Assigned: 8, Required: 10 },
+    { day: "Sat", Assigned: 5, Required: 5 },
+    { day: "Sun", Assigned: 3, Required: 5 },
+  ];
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <button
-        className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-        onClick={() => setShowAddModal(true)}
-      >
-        Add Employee
-      </button>
+    <div className="p-6 space-y-6">
+      {/* Top Action Buttons */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex gap-4">
+          <button className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">
+            View Schedule
+          </button>
+          <button className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">
+            Export Schedule
+          </button>
+        </div>
+      </div>
 
-      <table className="w-full mt-4 border-collapse border border-gray-300">
-        <thead>
-          <tr>
-            <th className="border border-gray-300 px-4 py-2">Name</th>
-            <th className="border border-gray-300 px-4 py-2">Email</th>
-            <th className="border border-gray-300 px-4 py-2">Phone</th>
-            <th className="border border-gray-300 px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {employees.map((employee) => (
-            <tr key={employee._id}>
-              <td className="border border-gray-300 px-4 py-2">{employee.name}</td>
-              <td className="border border-gray-300 px-4 py-2">{employee.email || "N/A"}</td>
-              <td className="border border-gray-300 px-4 py-2">{employee.phone || "N/A"}</td>
-              <td className="border border-gray-300 px-4 py-2">
-                <button
-                  className="text-blue-500 hover:underline"
-                  onClick={() => openEditModal(employee)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="text-red-500 hover:underline ml-2"
-                  onClick={() => handleDeleteEmployee(employee._id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Stats Section */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-gray-100 shadow-md rounded-lg p-4 flex flex-col items-center">
+          <h3 className="text-lg font-semibold">Total Employees</h3>
+          <p className="text-2xl font-bold">{stats.totalEmployees}</p>
+        </div>
+        <div className="bg-gray-100 shadow-md rounded-lg p-4 flex flex-col items-center">
+          <h3 className="text-lg font-semibold">On Leave</h3>
+          <p className="text-2xl font-bold">{stats.onLeave}</p>
+        </div>
+        <div className="bg-gray-100 shadow-md rounded-lg p-4 flex flex-col items-center">
+          <h3 className="text-lg font-semibold">Staffed</h3>
+          <p className="text-2xl font-bold">{stats.staffed}</p>
+        </div>
+        <div className="bg-gray-100 shadow-md rounded-lg p-4 flex flex-col items-center">
+          <h3 className="text-lg font-semibold">Alerts</h3>
+          <p className="text-2xl font-bold">{stats.alerts}</p>
+        </div>
+      </div>
 
-      {showAddModal && (
-        <AddEmployeeModal
-          onClose={() => setShowAddModal(false)}
-          onAdd={handleAddEmployee}
-        />
-      )}
+      {/* Weekly Staffing Overview */}
+      <div className="bg-white p-6 shadow-lg rounded-lg">
+        <h3 className="text-lg font-semibold mb-4">Staffing Overview</h3>
+        <ChartComponent
+          id="charts"
+          primaryXAxis={{ valueType: "Category", title: "Days" }}
+          primaryYAxis={{ title: "Employees" }}
+          tooltip={{ enable: true }}
+        >
+          <ChartInject services={[ColumnSeries, Category]} />
+          <SeriesCollectionDirective>
+            <SeriesDirective
+              dataSource={staffingChartData}
+              xName="day"
+              yName="Assigned"
+              name="Assigned"
+              type="Column"
+            />
+            <SeriesDirective
+              dataSource={staffingChartData}
+              xName="day"
+              yName="Required"
+              name="Required"
+              type="Column"
+            />
+          </SeriesCollectionDirective>
+        </ChartComponent>
+      </div>
 
-      {showEditModal && selectedEmployee && (
-        <EditEmployeeModal
-          employee={selectedEmployee}
-          onClose={() => setShowEditModal(false)}
-          onUpdate={handleEditEmployee}
-        />
-      )}
+      {/* Employee List */}
+      <EmployeeList
+        employees={employees}
+        handleEdit={handleEdit}
+        handleDelete={handleDelete}
+        fetchEmployees={fetchEmployees}
+      />
     </div>
   );
 };
