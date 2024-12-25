@@ -1,5 +1,5 @@
 import React from 'react';
-import Nav from '../components/Nav/Nav.jsx';
+import Nav from '../components/Home/Nav/Nav.jsx';
 import Hero from '../components/Home/Hero/Hero.jsx';
 import Features from '../components/Home/Features/Features.jsx';
 import ToolsInfo from '../components/Home/Toolsinfo/Toolsinfo.jsx';
