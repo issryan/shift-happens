@@ -115,3 +115,40 @@ export const getAnalytics = async () => {
 
   return res.data;
 };
+
+// Fetch all schedules
+export const getSchedules = async () => {
+  const res = await axios.get(`${API_BASE_URL}/schedule`, { headers: getAuthHeaders() });
+  return res.data;
+};
+
+// Fetch schedule by ID
+export const getScheduleById = async (id) => {
+  const res = await axios.get(`${API_BASE_URL}/schedule/${id}`, { headers: getAuthHeaders() });
+  return res.data;
+};
+
+// Update a schedule
+export const updateSchedule = async (id, data) => {
+  const res = await axios.put(`${API_BASE_URL}/schedule/${id}`, data, { headers: getAuthHeaders() });
+  return res.data;
+};
+
+// Generate a new schedule
+export const generateSchedule = async (data) => {
+  try {
+    const res = await axios.post(`${API_BASE_URL}/schedule/generate`, data, {
+      headers: getAuthHeaders(),
+    });
+    return res.data;
+  } catch (error) {
+    console.error('Error generating schedule:', error.message);
+    throw error;
+  }
+};
+
+// Delete a schedule
+export const deleteSchedule = async (id) => {
+  const res = await axios.delete(`${API_BASE_URL}/schedule/${id}`, { headers: getAuthHeaders() });
+  return res.data;
+};

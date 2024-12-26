@@ -1,4 +1,3 @@
-// App.jsx
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
@@ -11,7 +10,8 @@ import OperationsInfo from './pages/Operations';
 // Authenticated routes
 import Navbar from './components/Navbar/Navbar';
 import DashboardPage from './pages/Dashboard';
-import Schedule from './components/schedule/Schedule';
+import ScheduleOverview from './pages/ScheduleOverviewPage';
+import ScheduleEditPage from './pages/ScheduleEditPage';
 import Exports from './components/exports/Exports';
 import Profile from './pages/Profile';
 
@@ -40,7 +40,15 @@ const App = () => {
 
           {/* Authenticated routes */}
           <Route path="/dashboard" element={<ProtectedRoute element={<><Navbar /><DashboardPage /></>} />} />
-          <Route path="/schedule" element={<ProtectedRoute element={<><Navbar /><Schedule /></>} />} />
+          <Route path="/schedule" element={<ProtectedRoute element={<ScheduleOverview />} />} />
+          <Route
+            path="/schedule/edit/new"
+            element={<ProtectedRoute element={<ScheduleEditPage isNew={true} />} />}
+          />
+          <Route
+            path="/schedule/edit/:id"
+            element={<ProtectedRoute element={<ScheduleEditPage isNew={false} />} />}
+          />
           <Route path="/exports" element={<ProtectedRoute element={<><Navbar /><Exports /></>} />} />
           <Route path="/profile" element={<ProtectedRoute element={<><Navbar /><Profile /></>} />} />
         </Routes>
