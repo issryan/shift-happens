@@ -6,8 +6,9 @@ const OperationsSchema = new mongoose.Schema({
   hours: {
     type: Map, // To handle per-day start and end
     of: new mongoose.Schema({
-      start: { type: String, required: true },
-      end: { type: String, required: true },
+      start: { type: String },
+      end: { type: String },
+      closed: { type: Boolean, default: false }, 
     }),
     required: true,
   },
