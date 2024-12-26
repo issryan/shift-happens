@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getScheduleById, generateSchedule, updateSchedule, getEmployees } from '../utils/api';
+import { getScheduleById, getEmployees, updateSchedule, generateSchedule } from '../utils/api';
 import ScheduleEdit from '../components/schedule/ScheduleEdit';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -9,39 +9,29 @@ const ScheduleEditPage = ({ isNew }) => {
     startDate: '',
     endDate: '',
   });
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const { id } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchSchedule = async () => {
-      setLoading(true);
+    const fetchData = async () => {
       try {
+        const employeeData = await getEmployees();
+        setEmployees(employeeData);
+
         if (!isNew) {
           const scheduleData = await getScheduleById(id);
-          const employees = await getEmployees();
-          const availabilityEvents = employees.flatMap((employee) =>
-            employee.availability.map((availability) => ({
-              Id: employee.id,
-              Subject: `${employee.name} (Available)`,
-              StartTime: new Date(availability.startTime),
-              EndTime: new Date(availability.endTime),
-              CategoryColor: '#1e90ff',
-            }))
-          );
-          setSchedule({
-            ...scheduleData,
-            scheduleData: [...scheduleData.scheduleData, ...availabilityEvents],
-          });
+          setSchedule(scheduleData);
         }
       } catch (err) {
-        console.error('Error fetching schedule or employees:', err.message);
+        console.error('Error fetching data:', err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSchedule();
+    fetchData();
   }, [id, isNew]);
 
   const handleSave = async () => {
@@ -64,7 +54,7 @@ const ScheduleEditPage = ({ isNew }) => {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">{isNew ? 'Create Schedule' : 'Edit Schedule'}</h1>
-      <ScheduleEdit schedule={schedule} setSchedule={setSchedule} />
+      <ScheduleEdit schedule={schedule} setSchedule={setSchedule} employees={employees} />
       <div className="mt-4 flex justify-between">
         <button
           onClick={() => navigate('/schedule')}
