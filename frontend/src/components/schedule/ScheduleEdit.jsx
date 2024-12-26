@@ -14,8 +14,12 @@ import { generateScheduleData } from '../../utils/schedule';
 
 const ScheduleEdit = ({ schedule, setSchedule, employees }) => {
   useEffect(() => {
-    if (employees && employees.length > 0) {
-      const events = generateScheduleData(employees, schedule.startDate || new Date());
+    if (employees && employees.length > 0 && schedule.startDate) {
+      // Populate events for the full month
+      const startDate = new Date(schedule.startDate);
+      const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); // End of the month
+
+      const events = generateScheduleData(employees, startDate, endDate);
       setSchedule((prev) => ({
         ...prev,
         scheduleData: events,

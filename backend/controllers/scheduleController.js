@@ -4,7 +4,7 @@ const Employee = require('../models/Employee');
 // Generate a schedule
 exports.generateSchedule = async (req, res) => {
   try {
-    const { month } = req.body; // Month index (0-11)
+    const { month, businessHours } = req.body; // Expecting month index (0-11)
     const year = new Date().getFullYear();
     const startDate = new Date(year, month, 1); // First day of the selected month
     const endDate = new Date(year, month + 1, 0); // Last day of the selected month
@@ -16,33 +16,33 @@ exports.generateSchedule = async (req, res) => {
       return res.status(400).json({ message: 'No employees found for this manager.' });
     }
 
-    const scheduleData = employees.flatMap((employee) =>
-      employee.availability.map((availability) => {
-        const dayName = availability.day;
-        const date = new Date(startDate);
-        while (date <= endDate) {
-          if (date.toLocaleDateString('en-US', { weekday: 'short' }) === dayName) {
-            const startTime = new Date(date);
-            const [startHour, startMinute] = availability.start.split(':').map(Number);
-            startTime.setHours(startHour, startMinute, 0, 0);
+    const scheduleData = [];
 
-            const endTime = new Date(date);
-            const [endHour, endMinute] = availability.end.split(':').map(Number);
-            endTime.setHours(endHour, endMinute, 0, 0);
+    // Loop through each day of the month
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
 
-            return {
-              employee: employee.name,
-              EmployeeId: employee._id,
-              Subject: 'Work',
-              StartTime: startTime,
-              EndTime: endTime,
-              CategoryColor: '#1e90ff',
-            };
-          }
-          date.setDate(date.getDate() + 1);
+      // Skip non-business days
+      if (!businessHours[dayName] || businessHours[dayName].closed) continue;
+
+      const startHour = parseInt(businessHours[dayName].start.split(':')[0]);
+      const endHour = parseInt(businessHours[dayName].end.split(':')[0]);
+
+      // Assign employees to this day's schedule
+      employees.forEach((employee) => {
+        const availability = employee.availability.find((a) => a.day === dayName);
+
+        if (availability) {
+          scheduleData.push({
+            date: new Date(date),
+            day: dayName,
+            employeeId: employee._id,
+            startTime: `${startHour}:00`,
+            endTime: `${endHour}:00`,
+          });
         }
-      })
-    );
+      });
+    }
 
     const newSchedule = new Schedule({
       manager: req.user.id,
