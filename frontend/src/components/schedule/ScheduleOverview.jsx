@@ -1,61 +1,79 @@
-import React, { useEffect, useState } from 'react';
-import { getSchedules, deleteSchedule } from '../../utils/api';
+import React, { useState, useEffect } from 'react';
+import MonthPickerModal from './MonthPickerModal';
+import { generateSchedule, getSchedules, deleteSchedule } from '../../utils/api';
 import ScheduleCard from './ScheduleCard';
-import { useNavigate } from 'react-router-dom';
 
 const ScheduleOverview = () => {
-    const [schedules, setSchedules] = useState([]);
-    const navigate = useNavigate();
+  const [schedules, setSchedules] = useState([]);
+  const [showModal, setShowModal] = useState(false);
 
-    useEffect(() => {
-        const fetchSchedules = async () => {
-            try {
-                const data = await getSchedules();
-                setSchedules(data);
-            } catch (err) {
-                console.error('Error fetching schedules:', err.message);
-            }
-        };
+  useEffect(() => {
+    fetchSchedules();
+  }, []);
 
-        fetchSchedules();
-    }, []);
+  const fetchSchedules = async () => {
+    const data = await getSchedules();
+    setSchedules(data);
+  };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this schedule?')) {
-            try {
-                await deleteSchedule(id);
-                setSchedules(schedules.filter((schedule) => schedule._id !== id));
-            } catch (err) {
-                console.error('Error deleting schedule:', err.message);
-            }
-        }
-    };
+  const handleMonthSelect = async (month) => {
+    if (schedules.length >= 3) {
+      alert('You can only have a maximum of 3 schedules at a time. Please delete an existing schedule to create a new one.');
+      return;
+    }
 
-    return (
-        <div className="p-6">
-            <h1 className="text-2xl font-bold mb-4">Your Schedules</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {schedules.length === 0 ? (
-                    <p>No schedules found. Click the button to create a new one!</p>
-                ) : (
-                    schedules.map((schedule) => (
-                        <ScheduleCard
-                            key={schedule._id}
-                            schedule={schedule}
-                            onEdit={() => navigate(`/schedule/edit/${schedule._id}`)}
-                            onDelete={() => handleDelete(schedule._id)}
-                        />
-                    ))
-                )}
-            </div>
-            <div
-                className="p-4 border rounded shadow cursor-pointer hover:bg-gray-100 flex items-center justify-center"
-                onClick={() => navigate('/schedule/edit/new')}
-            >
-                <span className="text-xl text-gray-600">+ Create New Schedule</span>
-            </div>
-        </div>
-    );
+    try {
+      await generateSchedule({ month });
+      alert('Schedule created successfully!');
+      fetchSchedules();
+      setShowModal(false);
+    } catch (err) {
+      console.error('Error creating schedule:', err.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteSchedule(id);
+      alert('Schedule deleted successfully!');
+      fetchSchedules();
+    } catch (err) {
+      console.error('Error deleting schedule:', err.message);
+    }
+  };
+
+  const handleView = (id) => {
+    window.location.href = `/schedule/${id}`; // Navigate to the view/edit page
+  };
+
+  return (
+    <div>
+      <button
+        onClick={() => setShowModal(true)}
+        className={`bg-green-500 text-white px-4 py-2 rounded ${schedules.length >= 3 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-600'}`}
+        disabled={schedules.length >= 3}
+      >
+        Create New Schedule
+      </button>
+      <MonthPickerModal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={handleMonthSelect}
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        {schedules.map((schedule) => (
+          <ScheduleCard
+            key={schedule._id}
+            schedule={schedule}
+            onEdit={() => handleView(schedule._id)}
+            onDelete={() => handleDelete(schedule._id)}
+            onExport={(id) => console.log(`Exporting schedule with ID: ${id}`)}
+            onView={handleView}
+          />
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default ScheduleOverview;

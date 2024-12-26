@@ -135,11 +135,13 @@ export const updateSchedule = async (id, data) => {
 };
 
 // Generate a new schedule
-export const generateSchedule = async (data) => {
+export const generateSchedule = async ({ month }) => {
   try {
-    const res = await axios.post(`${API_BASE_URL}/schedule/generate`, data, {
-      headers: getAuthHeaders(),
-    });
+    const res = await axios.post(
+      `${API_BASE_URL}/schedule/generate`,
+      { month },
+      { headers: getAuthHeaders() }
+    );
     return res.data;
   } catch (error) {
     console.error('Error generating schedule:', error.message);

@@ -4,7 +4,10 @@ const Employee = require('../models/Employee');
 // Generate a schedule
 exports.generateSchedule = async (req, res) => {
   try {
-    const { startDate, endDate, businessHours, shiftDuration } = req.body;
+    const { month } = req.body; // Month index (0-11)
+    const year = new Date().getFullYear();
+    const startDate = new Date(year, month, 1); // First day of the selected month
+    const endDate = new Date(year, month + 1, 0); // Last day of the selected month
 
     // Fetch employees for the logged-in manager
     const employees = await Employee.find({ manager: req.user.id });
@@ -13,49 +16,33 @@ exports.generateSchedule = async (req, res) => {
       return res.status(400).json({ message: 'No employees found for this manager.' });
     }
 
-    // Initialize the schedule
-    const scheduleData = [];
-    const businessDays = Object.keys(businessHours).filter(day => !businessHours[day].closed);
+    const scheduleData = employees.flatMap((employee) =>
+      employee.availability.map((availability) => {
+        const dayName = availability.day;
+        const date = new Date(startDate);
+        while (date <= endDate) {
+          if (date.toLocaleDateString('en-US', { weekday: 'short' }) === dayName) {
+            const startTime = new Date(date);
+            const [startHour, startMinute] = availability.start.split(':').map(Number);
+            startTime.setHours(startHour, startMinute, 0, 0);
 
-    // Loop through each business day
-    for (let day of businessDays) {
-      const shifts = [];
-      let startTime = parseInt(businessHours[day].start.split(':')[0]);
-      const endTime = parseInt(businessHours[day].end.split(':')[0]);
+            const endTime = new Date(date);
+            const [endHour, endMinute] = availability.end.split(':').map(Number);
+            endTime.setHours(endHour, endMinute, 0, 0);
 
-      while (startTime < endTime) {
-        const timeSlot = `${startTime}:00 - ${startTime + shiftDuration}:00`;
-
-        // Match employees based on availability
-        const availableEmployees = employees.filter((employee) =>
-          employee.availability.includes(`${day} ${timeSlot}`)
-        );
-
-        if (availableEmployees.length > 0) {
-          const assignedEmployee = availableEmployees[0]; // Assign the first available employee
-          shifts.push({
-            employee: assignedEmployee.name,
-            timeSlot,
-          });
-
-          // Deduct hours from employee's required hours
-          assignedEmployee.hoursRequired -= shiftDuration;
-
-          // Remove employee if they’ve fulfilled their required hours
-          if (assignedEmployee.hoursRequired <= 0) {
-            employees.splice(employees.indexOf(assignedEmployee), 1);
+            return {
+              employee: employee.name,
+              EmployeeId: employee._id,
+              Subject: 'Work',
+              StartTime: startTime,
+              EndTime: endTime,
+              CategoryColor: '#1e90ff',
+            };
           }
+          date.setDate(date.getDate() + 1);
         }
-
-        // Increment time for the next shift
-        startTime += shiftDuration;
-      }
-
-      scheduleData.push({
-        day,
-        shifts,
-      });
-    }
+      })
+    );
 
     const newSchedule = new Schedule({
       manager: req.user.id,

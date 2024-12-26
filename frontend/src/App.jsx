@@ -46,7 +46,7 @@ const App = () => {
             element={<ProtectedRoute element={<ScheduleEditPage isNew={true} />} />}
           />
           <Route
-            path="/schedule/edit/:id"
+            path="/schedule/:id"
             element={<ProtectedRoute element={<ScheduleEditPage isNew={false} />} />}
           />
           <Route path="/exports" element={<ProtectedRoute element={<><Navbar /><Exports /></>} />} />
