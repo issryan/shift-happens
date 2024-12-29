@@ -39,14 +39,6 @@ const Navbar = () => {
           Schedule
         </NavLink>
         <NavLink
-          to="/exports"
-          className={({ isActive }) =>
-            isActive ? "text-gray-300 font-semibold" : "hover:text-gray-300"
-          }
-        >
-          Exports
-        </NavLink>
-        <NavLink
           to="/profile"
           className={({ isActive }) =>
             isActive ? "text-gray-300 font-semibold" : "hover:text-gray-300"
