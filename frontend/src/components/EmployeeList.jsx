@@ -7,6 +7,14 @@ const EmployeeList = ({ employees, handleEdit, handleDelete, fetchEmployees }) =
   const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
+  const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  // Helper to format availability for each day
+  const formatAvailability = (availability, day) => {
+    const dayData = availability.find((slot) => slot.day === day);
+    return dayData ? `${dayData.start}-${dayData.end}` : "X";
+  };
+
   // Open edit modal
   const openEditModal = (employee) => {
     setSelectedEmployee(employee);
@@ -57,8 +65,10 @@ const EmployeeList = ({ employees, handleEdit, handleDelete, fetchEmployees }) =
             <th className="p-3 border-b">Email</th>
             <th className="p-3 border-b">Phone</th>
             <th className="p-3 border-b">Hours Required</th>
-            <th className="p-3 border-b">Availability</th>
-            <th className="p-3 border-b">Actions</th>
+            {daysOfWeek.map((day) => (
+              <th key={day} className="p-3 border-b text-center">{day}</th>
+            ))}
+            <th className="p-3 border-b text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -68,12 +78,12 @@ const EmployeeList = ({ employees, handleEdit, handleDelete, fetchEmployees }) =
               <td className="p-3 border-b">{employee.email || "N/A"}</td>
               <td className="p-3 border-b">{employee.phone || "N/A"}</td>
               <td className="p-3 border-b">{employee.hoursRequired || "N/A"} hrs</td>
-              <td className="p-3 border-b">
-                {employee.availability
-                  .map((a) => `${a.day}: ${a.start}-${a.end}`)
-                  .join(", ")}
-              </td>
-              <td className="p-3 border-b flex gap-2">
+              {daysOfWeek.map((day) => (
+                <td key={day} className="p-3 border-b text-center">
+                  {formatAvailability(employee.availability, day)}
+                </td>
+              ))}
+              <td className="p-3 border-b flex gap-2 justify-center">
                 {/* Edit Button */}
                 <button
                   className="bg-yellow-400 text-white py-1 px-3 rounded hover:bg-yellow-500"
