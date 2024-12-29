@@ -9,6 +9,8 @@ const getAuthHeaders = () => {
   return { Authorization: `Bearer ${token}` };
 };
 
+/* -------------------------------- User Authentication -------------------------------- */
+
 // Get authenticated user
 export const getAuthenticatedUser = async () => {
   const res = await axios.get(`${API_BASE_URL}/auth/me`, {
@@ -17,7 +19,7 @@ export const getAuthenticatedUser = async () => {
   return res.data;
 };
 
-//register new user
+// Register new user
 export const registerUser = async (userData) => {
   const res = await axios.post(`${API_BASE_URL}/auth/register`, userData, {
     headers: { 'Content-Type': 'application/json' },
@@ -26,7 +28,7 @@ export const registerUser = async (userData) => {
   return res.data;
 };
 
-//login user
+// Login user
 export const loginUser = async (loginData) => {
   try {
     const res = await axios.post(`${API_BASE_URL}/auth/login`, loginData, {
@@ -40,6 +42,16 @@ export const loginUser = async (loginData) => {
   }
 };
 
+//update user password
+export const updateUserPassword = async (userData) => {
+  const res = await axios.put(`${API_BASE_URL}/auth/profile`, userData, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* -------------------------------- Business Management -------------------------------- */
+
 // Create business
 export const createBusiness = async (businessData) => {
   const res = await axios.post(`${API_BASE_URL}/business`, businessData, {
@@ -47,6 +59,24 @@ export const createBusiness = async (businessData) => {
   });
   return res.data;
 };
+
+// Fetch business details
+export const fetchBusiness = async () => {
+  const res = await axios.get(`${API_BASE_URL}/business`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// Update business details
+export const updateBusiness = async (businessData) => {
+  const res = await axios.put(`${API_BASE_URL}/business`, businessData, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* ----------------------------- Operations Management ----------------------------- */
 
 // Create operations
 export const createOperations = async (data) => {
@@ -56,13 +86,23 @@ export const createOperations = async (data) => {
   return res.data;
 };
 
-// Get user profile
-export const getUserProfile = async () => {
-  const res = await axios.get(`${API_BASE_URL}/auth/profile`, {
+// Fetch operations
+export const fetchOperations = async () => {
+  const res = await axios.get(`${API_BASE_URL}/operations`, {
     headers: getAuthHeaders(),
   });
   return res.data;
 };
+
+// Update operations
+export const updateOperations = async (operationsData) => {
+  const res = await axios.put(`${API_BASE_URL}/operations`, operationsData, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* ----------------------------- Employee Management ----------------------------- */
 
 // Get employees
 export const getEmployees = async () => {
@@ -80,15 +120,7 @@ export const addEmployee = async (employeeData) => {
   return res.data;
 };
 
-//get operation hours for add employee modal
-export const getOperations = async () => {
-  const res = await axios.get(`${API_BASE_URL}/operations`, {
-    headers: getAuthHeaders(),
-  });
-  return res.data;
-};
-
-//delete employee
+// Delete employee
 export const deleteEmployee = async (employeeId) => {
   const res = await axios.delete(`${API_BASE_URL}/employees/${employeeId}`, {
     headers: getAuthHeaders(),
@@ -96,7 +128,7 @@ export const deleteEmployee = async (employeeId) => {
   return res.data;
 };
 
-//update employee
+// Update employee
 export const updateEmployee = async (employeeId, updatedData) => {
   const res = await axios.put(`${API_BASE_URL}/employees/${employeeId}`, updatedData, {
     headers: getAuthHeaders(),
@@ -104,33 +136,21 @@ export const updateEmployee = async (employeeId, updatedData) => {
   return res.data;
 };
 
-// Get analytics for the dashboard
-export const getAnalytics = async () => {
-  const token = localStorage.getItem('token');
-  if (!token) throw new Error('No token found');
-
-  const res = await axios.get(`${API_BASE_URL}/employees/analytics`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  return res.data;
-};
+/* ----------------------------- Schedule Management ----------------------------- */
 
 // Fetch all schedules
 export const getSchedules = async () => {
-  const res = await axios.get(`${API_BASE_URL}/schedule`, { headers: getAuthHeaders() });
+  const res = await axios.get(`${API_BASE_URL}/schedule`, {
+    headers: getAuthHeaders(),
+  });
   return res.data;
 };
 
 // Fetch schedule by ID
 export const getScheduleById = async (id) => {
-  const res = await axios.get(`${API_BASE_URL}/schedule/${id}`, { headers: getAuthHeaders() });
-  return res.data;
-};
-
-// Update a schedule
-export const updateSchedule = async (id, data) => {
-  const res = await axios.put(`${API_BASE_URL}/schedule/${id}`, data, { headers: getAuthHeaders() });
+  const res = await axios.get(`${API_BASE_URL}/schedule/${id}`, {
+    headers: getAuthHeaders(),
+  });
   return res.data;
 };
 
@@ -149,8 +169,32 @@ export const generateSchedule = async ({ month }) => {
   }
 };
 
+// Update a schedule
+export const updateSchedule = async (id, data) => {
+  const res = await axios.put(`${API_BASE_URL}/schedule/${id}`, data, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
 // Delete a schedule
 export const deleteSchedule = async (id) => {
-  const res = await axios.delete(`${API_BASE_URL}/schedule/${id}`, { headers: getAuthHeaders() });
+  const res = await axios.delete(`${API_BASE_URL}/schedule/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* ----------------------------- Analytics Management ----------------------------- */
+
+// Get analytics for the dashboard
+export const getAnalytics = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+
+  const res = await axios.get(`${API_BASE_URL}/employees/analytics`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
   return res.data;
 };

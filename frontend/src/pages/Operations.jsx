@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { createOperations, getOperations } from '../utils/api';
+import { createOperations, fetchOperations } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 const OperationsInfo = () => {
@@ -28,7 +28,7 @@ const OperationsInfo = () => {
   useEffect(() => {
     const checkExistingOperations = async () => {
       try {
-        const operations = await getOperations();
+        const operations = await fetchOperations();
         if (operations) {
           // Redirect to dashboard if operations already exist
           navigate('/dashboard');

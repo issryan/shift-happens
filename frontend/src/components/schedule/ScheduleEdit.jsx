@@ -11,7 +11,7 @@ import {
   DragAndDrop,
 } from '@syncfusion/ej2-react-schedule';
 import { generateScheduleData } from '../../utils/schedule';
-import { getOperations } from '../../utils/api';
+import { fetchOperations } from '../../utils/api';
 
 const ScheduleEdit = ({ schedule, setSchedule, employees }) => {
   const [operationHours, setOperationHours] = useState({
@@ -32,7 +32,7 @@ const ScheduleEdit = ({ schedule, setSchedule, employees }) => {
   useEffect(() => {
     const fetchOperationHours = async () => {
       try {
-        const operations = await getOperations(); // Assume `getOperations` returns manager's business hours
+        const operations = await fetchOperations(); 
         const businessDays = Object.keys(operations).filter(
           (day) => !operations[day].closed
         );

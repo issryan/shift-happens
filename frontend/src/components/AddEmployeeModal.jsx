@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { addEmployee, getOperations } from "../utils/api";
+import { addEmployee, fetchOperations } from "../utils/api";
 
 const AddEmployeeModal = ({ onClose, onAdd }) => {
   const [name, setName] = useState("");
@@ -13,7 +13,7 @@ const AddEmployeeModal = ({ onClose, onAdd }) => {
   useEffect(() => {
     const fetchOperationsHours = async () => {
       try {
-        const operations = await getOperations();
+        const operations = await fetchOperations();
         console.log("Operations Hours:", operations);
 
         if (operations && operations.hours) {

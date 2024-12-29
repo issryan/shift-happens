@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaEdit, FaTrash, FaFileExport, FaEye } from 'react-icons/fa';
+import {FaTrash, FaFileExport, FaEye } from 'react-icons/fa';
 
 const ScheduleCard = ({ schedule, onEdit, onDelete, onExport, onView }) => (
   <div className="relative p-4 border rounded shadow flex flex-col justify-between group hover:bg-gray-100 transition duration-300">
