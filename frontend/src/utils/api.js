@@ -155,11 +155,11 @@ export const getScheduleById = async (id) => {
 };
 
 // Generate a new schedule
-export const generateSchedule = async ({ month }) => {
+export const generateSchedule = async ({ month, businessHours }) => {
   try {
     const res = await axios.post(
       `${API_BASE_URL}/schedule/generate`,
-      { month },
+      { month, businessHours },
       { headers: getAuthHeaders() }
     );
     return res.data;

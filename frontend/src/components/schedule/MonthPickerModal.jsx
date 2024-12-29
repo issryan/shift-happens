@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
+import React, { useState } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 const MonthPickerModal = ({ show, onClose, onConfirm }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const handleSave = () => {
     if (!selectedDate) {
-      alert('Please select a month.');
+      alert("Please select a month.");
       return;
     }
-    onConfirm(selectedDate.getMonth()); // Pass the selected month index
+
+    const month = selectedDate.getMonth();
+    onConfirm(month); // Pass the selected month index
     onClose();
   };
 
@@ -32,8 +34,8 @@ const MonthPickerModal = ({ show, onClose, onConfirm }) => {
           <Calendar
             value={selectedDate}
             onChange={(date) => setSelectedDate(date)}
-            view="year" // Restrict to year view
-            maxDetail="year" // Month selection only
+            view="year"
+            maxDetail="year"
             className="rounded-lg"
           />
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getEmployees, getAnalytics, deleteEmployee, updateEmployee } from "../utils/api";
-import EmployeeList from "../components/EmployeeList";
+import EmployeeList from "../components/employee/EmployeeList";
 import {
   ChartComponent,
   SeriesCollectionDirective,

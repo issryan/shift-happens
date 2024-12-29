@@ -4,45 +4,38 @@ const Employee = require('../models/Employee');
 // Generate a schedule
 exports.generateSchedule = async (req, res) => {
   try {
-    const { month, businessHours } = req.body; // Expecting month index (0-11)
+    const { month, businessHours } = req.body;
+
     const year = new Date().getFullYear();
-    const startDate = new Date(year, month, 1); // First day of the selected month
-    const endDate = new Date(year, month + 1, 0); // Last day of the selected month
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
 
-    // Fetch employees for the logged-in manager
+    if (isNaN(startDate) || isNaN(endDate)) {
+      return res.status(400).json({ message: "Invalid dates calculated." });
+    }
+
     const employees = await Employee.find({ manager: req.user.id });
-
     if (!employees.length) {
-      return res.status(400).json({ message: 'No employees found for this manager.' });
+      return res.status(400).json({ message: "No employees found for this manager." });
     }
 
-    const scheduleData = [];
-
-    // Loop through each day of the month
-    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-
-      // Skip non-business days
-      if (!businessHours[dayName] || businessHours[dayName].closed) continue;
-
-      const startHour = parseInt(businessHours[dayName].start.split(':')[0]);
-      const endHour = parseInt(businessHours[dayName].end.split(':')[0]);
-
-      // Assign employees to this day's schedule
-      employees.forEach((employee) => {
-        const availability = employee.availability.find((a) => a.day === dayName);
-
-        if (availability) {
-          scheduleData.push({
-            date: new Date(date),
-            day: dayName,
-            employeeId: employee._id,
-            startTime: `${startHour}:00`,
-            endTime: `${endHour}:00`,
-          });
-        }
-      });
-    }
+    const scheduleData = employees.flatMap((employee) => {
+      return Object.keys(businessHours)
+        .filter((day) => !businessHours[day].closed)
+        .flatMap((day) => {
+          const availability = employee.availability.find((a) => a.day === day);
+          if (availability) {
+            return {
+              employeeId: employee._id,
+              day,
+              date: new Date(startDate),
+              startTime: businessHours[day].start,
+              endTime: businessHours[day].end,
+            };
+          }
+          return [];
+        });
+    });
 
     const newSchedule = new Schedule({
       manager: req.user.id,
@@ -53,9 +46,9 @@ exports.generateSchedule = async (req, res) => {
 
     await newSchedule.save();
     res.status(201).json(newSchedule);
-  } catch (err) {
-    console.error('Error generating schedule:', err.message);
-    res.status(500).json({ message: 'Server error' });
+  } catch (error) {
+    console.error("Error generating schedule:", error.message);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

@@ -1,47 +1,33 @@
 import React, { useState, useEffect } from "react";
-import { addEmployee, fetchOperations } from "../utils/api";
+import { updateEmployee } from "../../utils/api";
 
-const AddEmployeeModal = ({ onClose, onAdd }) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [operationsHours, setOperationsHours] = useState({});
-  const [hoursRequired, setHoursRequired] = useState(0);
+const EditEmployeeModal = ({ employee, onClose, onUpdate }) => {
+  const [name, setName] = useState(employee?.name || "");
+  const [email, setEmail] = useState(employee?.email || "");
+  const [phone, setPhone] = useState(employee?.phone || "");
+  const [hoursRequired, setHoursRequired] = useState(employee?.hoursRequired || 0);
   const [availability, setAvailability] = useState({});
 
-  // Fetch operations hours when the modal loads
   useEffect(() => {
-    const fetchOperationsHours = async () => {
-      try {
-        const operations = await fetchOperations();
-        console.log("Operations Hours:", operations);
-
-        if (operations && operations.hours) {
-          setOperationsHours(operations.hours);
-
-          // Initialize availability based on operations hours
-          const initialAvailability = {};
-          Object.keys(operations.hours).forEach((day) => {
-            const { start, end } = operations.hours[day];
-            initialAvailability[day] = {
-              available: true, // Default to available
-              start,
-              end,
-            };
-          });
-          setAvailability(initialAvailability);
+    if (employee && employee.availability) {
+      const initialAvailability = {};
+      // Initialize availability based on the employee's existing availability
+      for (let day of ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]) {
+        const dayAvailability = employee.availability.find((a) => a.day === day);
+        if (dayAvailability) {
+          initialAvailability[day] = {
+            available: true,
+            start: dayAvailability.start,
+            end: dayAvailability.end,
+          };
         } else {
-          console.error("Invalid operations hours data");
+          initialAvailability[day] = { available: false, start: "", end: "" };
         }
-      } catch (err) {
-        console.error("Error fetching operations hours:", err.message);
       }
-    };
+      setAvailability(initialAvailability);
+    }
+  }, [employee]);
 
-    fetchOperationsHours();
-  }, []);
-
-  // Handle changes in availability
   const handleAvailabilityChange = (day, key, value) => {
     setAvailability((prev) => ({
       ...prev,
@@ -49,7 +35,6 @@ const AddEmployeeModal = ({ onClose, onAdd }) => {
     }));
   };
 
-  // Toggle availability for a day
   const toggleAvailability = (day) => {
     setAvailability((prev) => ({
       ...prev,
@@ -58,10 +43,7 @@ const AddEmployeeModal = ({ onClose, onAdd }) => {
         available: !prev[day].available,
         ...(prev[day].available
           ? { start: "", end: "" } // Clear start/end when unavailable
-          : {
-            start: operationsHours[day]?.start || "09:00", // Default start
-            end: operationsHours[day]?.end || "17:00", // Default end
-          }),
+          : { start: "09:00", end: "17:00" }), // Default times
       },
     }));
   };
@@ -73,28 +55,26 @@ const AddEmployeeModal = ({ onClose, onAdd }) => {
         .filter(([, value]) => value.available)
         .map(([day, { start, end }]) => ({ day, start, end }));
 
-      const payload = {
+      const updatedEmployee = {
         name,
         email: email || null,
         phone: phone || null,
+        hoursRequired,
         availability: filteredAvailability,
-        hoursRequired: hoursRequired || 0,
       };
 
-      console.log("Payload being sent:", payload);
-
-      await addEmployee(payload);
-      onAdd(payload);
-      onClose();
+      await updateEmployee(employee._id, updatedEmployee);
+      onUpdate(updatedEmployee); // Notify parent component of the update
+      onClose(); // Close the modal
     } catch (err) {
-      console.error("Error adding employee:", err.message);
+      console.error("Error updating employee:", err.message);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
       <div className="bg-white p-6 rounded shadow-lg w-full max-w-3xl">
-        <h2 className="text-lg font-bold mb-4">Add Employee</h2>
+        <h2 className="text-lg font-bold mb-4">Edit Employee</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -154,8 +134,6 @@ const AddEmployeeModal = ({ onClose, onAdd }) => {
                     <input
                       type="time"
                       value={availability[day].start}
-                      min={operationsHours[day]?.start || "00:00"}
-                      max={operationsHours[day]?.end || "23:59"}
                       onChange={(e) => handleAvailabilityChange(day, "start", e.target.value)}
                       className="p-2 border rounded w-1/2"
                       required
@@ -163,8 +141,6 @@ const AddEmployeeModal = ({ onClose, onAdd }) => {
                     <input
                       type="time"
                       value={availability[day].end}
-                      min={availability[day]?.start} // End time must be after start time
-                      max={operationsHours[day]?.end || "23:59"}
                       onChange={(e) => handleAvailabilityChange(day, "end", e.target.value)}
                       className="p-2 border rounded w-1/2"
                       required
@@ -187,7 +163,7 @@ const AddEmployeeModal = ({ onClose, onAdd }) => {
               type="submit"
               className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
             >
-              Add Employee
+              Save Changes
             </button>
           </div>
         </form>
@@ -196,4 +172,4 @@ const AddEmployeeModal = ({ onClose, onAdd }) => {
   );
 };
 
-export default AddEmployeeModal;
+export default EditEmployeeModal;
