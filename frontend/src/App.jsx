@@ -6,6 +6,8 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import BusinessInfoPage from './pages/BusinessInfo';
 import OperationsInfo from './pages/Operations';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Authenticated routes
 import Navbar from './components/Navbar/Navbar';
@@ -52,6 +54,7 @@ const App = () => {
           <Route path="/exports" element={<ProtectedRoute element={<><Navbar /><Exports /></>} />} />
           <Route path="/profile" element={<ProtectedRoute element={<><Navbar /><Profile /></>} />} />
         </Routes>
+        <ToastContainer />
       </Router>
     </AuthProvider>
   );

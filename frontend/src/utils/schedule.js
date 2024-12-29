@@ -1,57 +1,41 @@
-export const generateScheduleData = (employees, startDate, endDate) => {
-  const getDateForDay = (day, weekStartDate) => {
-    const dayMap = {
-      Sun: 0,
-      Mon: 1,
-      Tue: 2,
-      Wed: 3,
-      Thu: 4,
-      Fri: 5,
-      Sat: 6,
-    };
-    const dayIndex = dayMap[day];
-    const date = new Date(weekStartDate);
-    date.setDate(date.getDate() + dayIndex - date.getDay());
-    return date;
-  };
+export const generateScheduleData = (employees, startDate, endDate, operations) => {
+  const scheduleData = [];
 
-  const availabilityEvents = employees.flatMap((employee) => {
-    if (!employee.availability || employee.availability.length === 0) {
-      console.warn(`Employee ${employee.name} has no availability`);
-      return [];
+  let currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    const dayName = currentDate.toLocaleDateString("en-US", { weekday: "short" });
+
+    // Skip closed days
+    if (operations[dayName]?.closed) {
+      currentDate.setDate(currentDate.getDate() + 1);
+      continue;
     }
 
-    return employee.availability.flatMap((availability) => {
-      const date = getDateForDay(availability.day, startDate);
-      const endOfMonth = new Date(endDate);
+    // Assign employees to shifts
+    employees.forEach((employee) => {
+      const availability = employee.availability.find((slot) => slot.day === dayName);
+      if (availability) {
+        const startTime = new Date(currentDate);
+        const endTime = new Date(currentDate);
 
-      const events = [];
-      while (date <= endOfMonth) {
-        // Skip closed days
-        const startTime = new Date(date);
-        const [startHour, startMinute] = availability.start.split(':').map(Number);
+        const [startHour, startMinute] = availability.start.split(":").map(Number);
+        const [endHour, endMinute] = availability.end.split(":").map(Number);
+
         startTime.setHours(startHour, startMinute, 0, 0);
-
-        const endTime = new Date(date);
-        const [endHour, endMinute] = availability.end.split(':').map(Number);
         endTime.setHours(endHour, endMinute, 0, 0);
 
-        events.push({
-          Id: `${employee._id}-${date.toISOString()}`,
-          Subject: employee.name.split(' ')[0], // Use the employee's first name
-          StartTime: new Date(startTime),
-          EndTime: new Date(endTime),
+        scheduleData.push({
           EmployeeId: employee._id,
-          CategoryColor: '#1e90ff', // Default color
+          Subject: employee.name,
+          StartTime: startTime,
+          EndTime: endTime,
+          CategoryColor: "#1e90ff", // Default color
         });
-
-        // Move to the next week
-        date.setDate(date.getDate() + 7);
       }
-
-      return events;
     });
-  });
 
-  return availabilityEvents;
+    currentDate.setDate(currentDate.getDate() + 1); // Move to next day
+  }
+
+  return { scheduleData };
 };

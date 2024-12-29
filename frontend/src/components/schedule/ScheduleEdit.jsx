@@ -1,58 +1,81 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ScheduleComponent,
-  ViewsDirective,
-  ViewDirective,
-  Week,
-  Month,
-  Inject,
   ResourcesDirective,
   ResourceDirective,
+  ViewsDirective,
+  ViewDirective,
+  Inject,
+  TimelineViews,
+  TimelineMonth,
   DragAndDrop,
+  Resize,
 } from "@syncfusion/ej2-react-schedule";
-import { fetchOperations } from "../../utils/api";
 import Breadcrumbs from "../common/Breadcrumbs";
+import { toast } from "react-toastify";
+import { fetchOperations } from "../../utils/api";
+import { predefinedColors } from "../../utils/constants";
+import { generateScheduleData } from "../../utils/schedule";
 
 const ScheduleEdit = ({ schedule, setSchedule, employees }) => {
+  const scheduleObj = useRef(null);
   const [operationHours, setOperationHours] = useState({
     start: "09:00",
     end: "17:30",
     closedDays: [],
   });
 
-  // Define predefinedColors for the employee resources
-  const predefinedColors = [
-    "#1e90ff", // Light Blue
-    "#ff6347", // Tomato
-    "#32cd32", // Lime Green
-    "#ffa500", // Orange
-    "#6a5acd", // Slate Blue
-  ];
-
-  // Fetch operation hours
+  // Fetch operation hours and initialize schedule data
   useEffect(() => {
     const fetchOperationHours = async () => {
       try {
         const operations = await fetchOperations();
-        const businessDays = Object.keys(operations).filter(
-          (day) => !operations[day].closed
-        );
-        setOperationHours({
-          start: operations[businessDays[0]].start,
-          end: operations[businessDays[0]].end,
-          closedDays: Object.keys(operations)
-            .filter((day) => operations[day].closed)
-            .map((day) => day.substring(0, 3)), // Short format like "Mon"
-        });
+        setOperationHours(operations);
+  
+        if (employees.length > 0 && schedule.startDate && schedule.endDate) {
+          const { scheduleData } = generateScheduleData(
+            employees,
+            new Date(schedule.startDate),
+            new Date(schedule.endDate),
+            operations
+          );
+  
+          setSchedule((prev) => ({
+            ...prev,
+            scheduleData,
+          }));
+        }
       } catch (err) {
         console.error("Error fetching operation hours:", err.message);
       }
     };
-
+  
     fetchOperationHours();
-  }, []);
+  }, [employees, schedule.startDate, schedule.endDate, setSchedule]);
 
   
+
+  // Validate drag-and-drop events
+  const onDragStop = (args) => {
+    const eventData = args.data;
+    const dayName = eventData.StartTime.toLocaleDateString("en-US", { weekday: "short" });
+    const employee = employees.find((emp) => emp._id === eventData.EmployeeId);
+
+    // Validate business hours
+    if (operationHours[dayName]?.closed) {
+      toast.error("Cannot schedule shifts on closed days.");
+      args.cancel = true;
+      return;
+    }
+
+    // Validate employee availability
+    const availability = employee.availability.find((slot) => slot.day === dayName);
+    if (!availability) {
+      toast.warning(`${employee.name} is not available on ${dayName}.`);
+      args.cancel = true;
+      return;
+    }
+  };
 
   return (
     <div>
@@ -63,17 +86,20 @@ const ScheduleEdit = ({ schedule, setSchedule, employees }) => {
           { label: "Edit Schedule" },
         ]}
       />
-      <div className="p-4 bg-gray-50 rounded-lg shadow">
+      <div className="flex flex-col gap-6 p-6 bg-white shadow-md rounded-md">
         <h1 className="text-2xl font-bold mb-4">Edit Schedule</h1>
         <ScheduleComponent
+          ref={scheduleObj}
           height="650px"
           eventSettings={{ dataSource: schedule.scheduleData }}
           workHours={{ start: operationHours.start, end: operationHours.end }}
           timeScale={{ enable: true, interval: 60 }}
           selectedDate={new Date(schedule.startDate || Date.now())}
-          showWeekend={true} // Show weekends
-          readonly={false} // Enable editing
+          group={{ enable: true, resources: ["Employees"] }}
+          dragStop={onDragStop}
+          readonly={false}
         >
+          {/* Resource Definitions */}
           <ResourcesDirective>
             <ResourceDirective
               field="EmployeeId"
@@ -83,18 +109,22 @@ const ScheduleEdit = ({ schedule, setSchedule, employees }) => {
               dataSource={employees.map((emp, index) => ({
                 text: emp.name,
                 id: emp._id,
-                color: predefinedColors[index % predefinedColors.length], // Cycle colors
+                color: predefinedColors[index % predefinedColors.length],
               }))}
               textField="text"
               idField="id"
               colorField="color"
             />
           </ResourcesDirective>
+
+          {/* Views */}
           <ViewsDirective>
-            <ViewDirective option="Week" />
-            <ViewDirective option="Month" />
+            <ViewDirective option="TimelineDay" />
+            <ViewDirective option="TimelineWeek" />
+            <ViewDirective option="TimelineMonth" />
           </ViewsDirective>
-          <Inject services={[Week, Month, DragAndDrop]} />
+
+          <Inject services={[TimelineViews, TimelineMonth, DragAndDrop, Resize]} />
         </ScheduleComponent>
       </div>
     </div>

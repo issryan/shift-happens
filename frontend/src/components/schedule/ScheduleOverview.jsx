@@ -17,8 +17,8 @@ const ScheduleOverview = () => {
     setSchedules(data);
   };
 
-  const handleMonthSelect = async ({ month, year }) => {
-    const businessHours = {
+  const handleMonthSelect = async ({ month, year }) => { 
+    const businessHours = { //change this to fetch the actual business hours
       Mon: { start: "09:00", end: "17:00", closed: false },
       Tue: { start: "09:00", end: "17:00", closed: false },
       Wed: { start: "09:00", end: "17:00", closed: false },
