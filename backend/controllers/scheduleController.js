@@ -4,17 +4,21 @@ const Employee = require('../models/Employee');
 // Generate a schedule
 exports.generateSchedule = async (req, res) => {
   try {
-    const { month, businessHours } = req.body;
+    const { month, year, businessHours } = req.body;
 
-    const year = new Date().getFullYear();
-    const startDate = new Date(year, month, 1);
-    const endDate = new Date(year, month + 1, 0);
+    if (month === undefined || year === undefined) {
+      return res.status(400).json({ message: "Invalid month or year." });
+    }
 
-    if (isNaN(startDate) || isNaN(endDate)) {
-      return res.status(400).json({ message: "Invalid dates calculated." });
+    const startDate = new Date(year, month, 1); // First day of the selected month
+    const endDate = new Date(year, month + 1, 0); // Last day of the selected month
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({ message: "Invalid startDate or endDate." });
     }
 
     const employees = await Employee.find({ manager: req.user.id });
+
     if (!employees.length) {
       return res.status(400).json({ message: "No employees found for this manager." });
     }

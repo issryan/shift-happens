@@ -17,24 +17,19 @@ const ScheduleOverview = () => {
     setSchedules(data);
   };
 
-  const handleMonthSelect = async (month) => {
-    if (schedules.length >= 3) {
-      alert("You can only have a maximum of 3 schedules at a time. Please delete an existing schedule to create a new one.");
-      return;
-    }
-
+  const handleMonthSelect = async ({ month, year }) => {
     const businessHours = {
-      Mon: { start: '09:00', end: '17:00', closed: false },
-      Tue: { start: '09:00', end: '17:00', closed: false },
-      Wed: { start: '09:00', end: '17:00', closed: false },
-      Thu: { start: '09:00', end: '17:00', closed: false },
-      Fri: { start: '09:00', end: '17:00', closed: false },
+      Mon: { start: "09:00", end: "17:00", closed: false },
+      Tue: { start: "09:00", end: "17:00", closed: false },
+      Wed: { start: "09:00", end: "17:00", closed: false },
+      Thu: { start: "09:00", end: "17:00", closed: false },
+      Fri: { start: "09:00", end: "17:00", closed: false },
       Sat: { closed: true },
       Sun: { closed: true },
     };
-
+  
     try {
-      await generateSchedule({ month, businessHours });
+      await generateSchedule({ month, year, businessHours });
       alert("Schedule created successfully!");
       fetchSchedules();
       setShowModal(false);
@@ -60,13 +55,18 @@ const ScheduleOverview = () => {
   return (
     <div>
       <Breadcrumbs paths={[{ label: "Home", to: "/" }, { label: "Schedules" }]} />
+      <div
+        onClick={() => setShowModal(true)}
+        className="flex justify-center items-center bg-gray-200 rounded-lg h-32 cursor-pointer hover:bg-gray-300"
+      >
+        <span className="text-4xl text-gray-600">+</span>
+      </div>
+      <MonthPickerModal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={handleMonthSelect}
+      />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        <div
-          onClick={() => setShowModal(true)}
-          className="cursor-pointer flex justify-center items-center border-dashed border-2 border-gray-400 rounded-lg text-gray-400 hover:text-gray-600 hover:border-gray-600 transition p-4"
-        >
-          <span className="text-2xl">+</span>
-        </div>
         {schedules.map((schedule) => (
           <ScheduleCard
             key={schedule._id}
@@ -78,11 +78,6 @@ const ScheduleOverview = () => {
           />
         ))}
       </div>
-      <MonthPickerModal
-        show={showModal}
-        onClose={() => setShowModal(false)}
-        onConfirm={handleMonthSelect}
-      />
     </div>
   );
 };

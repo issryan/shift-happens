@@ -10,9 +10,9 @@ const MonthPickerModal = ({ show, onClose, onConfirm }) => {
       alert("Please select a month.");
       return;
     }
-
     const month = selectedDate.getMonth();
-    onConfirm(month); // Pass the selected month index
+    const year = selectedDate.getFullYear();
+    onConfirm({ month, year });
     onClose();
   };
 
@@ -34,8 +34,8 @@ const MonthPickerModal = ({ show, onClose, onConfirm }) => {
           <Calendar
             value={selectedDate}
             onChange={(date) => setSelectedDate(date)}
-            view="year"
-            maxDetail="year"
+            view="year" // Restrict to year view
+            maxDetail="year" // Month selection only
             className="rounded-lg"
           />
         </div>
