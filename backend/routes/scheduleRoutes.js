@@ -6,11 +6,12 @@ const {
   deleteSchedule,
 } = require('../controllers/scheduleController');
 const { protect } = require('../middleware/authMiddleware');
+const { validateSchedule } = require('../utils/validation');
 
 const router = express.Router();
 
 // Generate a new schedule
-router.post('/generate', protect, generateSchedule);
+router.post('/generate', protect, validateSchedule, generateSchedule);
 
 // Get all schedules for the logged-in manager
 router.get('/', protect, getSchedules);

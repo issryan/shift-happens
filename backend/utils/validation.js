@@ -38,6 +38,23 @@ exports.validateEmployee = [
     .withMessage("Hours required must be a non-negative integer"),
 ];
 
+//Validate schedule creation
+exports.validateSchedule = [
+  body('month')
+    .isInt({ min: 1, max: 12 })
+    .withMessage('Month must be a valid number between 1 and 12'),
+  body('year')
+    .isInt({ min: 2000, max: 2100 })
+    .withMessage('Year must be a valid number'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+];
+
 exports.validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

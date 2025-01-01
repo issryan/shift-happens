@@ -12,7 +12,7 @@ exports.generateSchedule = async (req, res) => {
     // Check if manager already has 3 active schedules
     const activeSchedules = await Schedule.countDocuments({ manager: managerId });
     if (activeSchedules >= 3) {
-      return res.status(400).json({ message: 'Limit of 3 schedules reached' });
+      return res.status(400).json({ message: 'You can only have up to 3 active schedules. Delete old schedules to create new ones.' });
     }
 
     const startDate = new Date(year, month - 1, 1);
@@ -21,8 +21,12 @@ exports.generateSchedule = async (req, res) => {
     const employees = await Employee.find({ manager: managerId });
     const operations = await Operations.findOne({ manager: managerId });
 
-    if (!operations || employees.length === 0) {
-      return res.status(400).json({ message: 'Employees or operations data missing' });
+    if (!operations) {
+      return res.status(400).json({ message: 'Operational data not found. Please configure your business operations.' });
+    }
+
+    if (employees.length === 0) {
+      return res.status(400).json({ message: 'No employees found. Add employees before generating a schedule.' });
     }
 
     const schedule = new Schedule({ manager: managerId, startDate, endDate });
