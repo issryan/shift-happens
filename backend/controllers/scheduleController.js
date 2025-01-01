@@ -12,12 +12,10 @@ exports.generateSchedule = async (req, res) => {
     // Check if manager already has 3 active schedules
     const activeSchedules = await Schedule.countDocuments({ manager: managerId });
     if (activeSchedules >= 3) {
-      return res.status(400).json({ message: 'You can only have up to 3 active schedules. Delete old schedules to create new ones.' });
+      return res.status(400).json({ message: 'Limit of 3 active schedules reached. Delete old schedules to create new ones.' });
     }
 
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-
+    // Check for employees and operations
     const employees = await Employee.find({ manager: managerId });
     const operations = await Operations.findOne({ manager: managerId });
 
@@ -29,30 +27,31 @@ exports.generateSchedule = async (req, res) => {
       return res.status(400).json({ message: 'No employees found. Add employees before generating a schedule.' });
     }
 
+    // Create schedule
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
     const schedule = new Schedule({ manager: managerId, startDate, endDate });
     await schedule.save();
 
-    // Generate events for the schedule
+    // Generate events
     const events = employees.flatMap((employee) => {
-      return operations.days.flatMap((operationDay) => {
-        const availability = employee.availability.find((a) => a.day === operationDay.day);
+      return operations.hours.flatMap((operationDay, day) => {
+        const availability = employee.availability.find((a) => a.day === day);
 
-        if (operationDay.closed || !availability) {
-          return []; // Skip closed days or days the employee isn't available
-        }
+        if (operationDay.closed || !availability) return []; // Skip closed or unavailable days
 
-        // Create shifts within operational hours while respecting employee availability
-        const startOperationTime = parseInt(operationDay.start.replace(':', ''), 10);
-        const endOperationTime = parseInt(operationDay.end.replace(':', ''), 10);
-        const startAvailabilityTime = parseInt(availability.start.replace(':', ''), 10);
-        const endAvailabilityTime = parseInt(availability.end.replace(':', ''), 10);
+        const shiftStart = Math.max(
+          parseInt(operationDay.start.replace(':', ''), 10),
+          parseInt(availability.start.replace(':', ''), 10)
+        );
 
-        const shiftStart = Math.max(startOperationTime, startAvailabilityTime);
-        const shiftEnd = Math.min(endOperationTime, endAvailabilityTime);
+        const shiftEnd = Math.min(
+          parseInt(operationDay.end.replace(':', ''), 10),
+          parseInt(availability.end.replace(':', ''), 10)
+        );
 
-        if (shiftStart >= shiftEnd) {
-          return []; // No valid shifts for this day
-        }
+        if (shiftStart >= shiftEnd) return []; // Invalid shift timing
 
         return [{
           employeeId: employee._id,
@@ -68,7 +67,7 @@ exports.generateSchedule = async (req, res) => {
     res.status(201).json({ schedule });
   } catch (error) {
     console.error('Error generating schedule:', error.message);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: `Server error: ${error.message}` });
   }
 };
 

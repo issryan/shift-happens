@@ -55,6 +55,26 @@ exports.validateSchedule = [
   },
 ];
 
+exports.validateEventUpdate = [
+  body('startTime').optional().isISO8601().withMessage('Invalid start time format'),
+  body('endTime').optional().isISO8601().withMessage('Invalid end time format'),
+  body('details').optional().isString().withMessage('Details must be a string'),
+  body('startTime')
+    .custom((value, { req }) => {
+      if (value && req.body.endTime && new Date(value) >= new Date(req.body.endTime)) {
+        throw new Error('startTime must be before endTime');
+      }
+      return true;
+    }),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+];
+
 exports.validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

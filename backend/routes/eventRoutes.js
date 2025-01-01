@@ -12,8 +12,7 @@ const router = express.Router();
 router.get('/:scheduleId', protect, getEventsByScheduleId);
 
 // Update an event (e.g., change shift details)
-router.put('/:id', protect, updateEvent);
-
+router.put('/:id', protect, validateEventUpdate, updateEvent);
 // Delete an event
 router.delete('/:id', protect, deleteEvent);
 
