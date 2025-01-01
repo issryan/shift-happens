@@ -1,28 +1,24 @@
 const express = require('express');
 const {
-    generateSchedule,
-    getAllSchedules,
-    getScheduleById,
-    updateSchedule,
-    deleteSchedule,
+  generateSchedule,
+  getSchedules,
+  getScheduleById,
+  deleteSchedule,
 } = require('../controllers/scheduleController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Generate a schedule
-router.post('/generate', authMiddleware, generateSchedule);
+// Generate a new schedule
+router.post('/generate', protect, generateSchedule);
 
-// Get all schedules
-router.get('/', authMiddleware, getAllSchedules);
+// Get all schedules for the logged-in manager
+router.get('/', protect, getSchedules);
 
-// Get a specific schedule
-router.get('/:id', authMiddleware, getScheduleById);
+// Get a specific schedule by ID
+router.get('/:id', protect, getScheduleById);
 
-// Update a specific schedule
-router.put('/:id', authMiddleware, updateSchedule);
-
-// Delete a schedule
-router.delete('/:id', authMiddleware, deleteSchedule);
+// Delete a schedule by ID
+router.delete('/:id', protect, deleteSchedule);
 
 module.exports = router;

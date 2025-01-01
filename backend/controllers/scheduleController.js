@@ -1,127 +1,97 @@
 const Schedule = require('../models/Schedule');
+const Event = require('../models/Event');
 const Employee = require('../models/Employee');
+const Operations = require('../models/Operations');
 
-// Generate a schedule
+// Generate schedule
 exports.generateSchedule = async (req, res) => {
   try {
-    const { month, year, businessHours } = req.body;
+    const { month, year } = req.body;
+    const managerId = req.user.id;
 
-    if (month === undefined || year === undefined) {
-      return res.status(400).json({ message: "Invalid month or year." });
+    // Check if manager already has 3 active schedules
+    const activeSchedules = await Schedule.countDocuments({ manager: managerId });
+    if (activeSchedules >= 3) {
+      return res.status(400).json({ message: 'Limit of 3 schedules reached' });
     }
 
-    const startDate = new Date(year, month, 1); // First day of the selected month
-    const endDate = new Date(year, month + 1, 0); // Last day of the selected month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
 
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      return res.status(400).json({ message: "Invalid startDate or endDate." });
+    const employees = await Employee.find({ manager: managerId });
+    const operations = await Operations.findOne({ manager: managerId });
+
+    if (!operations || employees.length === 0) {
+      return res.status(400).json({ message: 'Employees or operations data missing' });
     }
 
-    const employees = await Employee.find({ manager: req.user.id });
+    const schedule = new Schedule({ manager: managerId, startDate, endDate });
+    await schedule.save();
 
-    if (!employees.length) {
-      return res.status(400).json({ message: "No employees found for this manager." });
-    }
+    // Generate events for the schedule
+    const events = employees.flatMap((employee) => {
+      return operations.days.flatMap((operationDay) => {
+        const availability = employee.availability.find((a) => a.day === operationDay.day);
 
-    const scheduleData = employees.flatMap((employee) => {
-      return Object.keys(businessHours)
-        .filter((day) => !businessHours[day].closed)
-        .flatMap((day) => {
-          const availability = employee.availability.find((a) => a.day === day);
-          if (availability) {
-            return {
-              employeeId: employee._id,
-              day,
-              date: new Date(startDate),
-              startTime: businessHours[day].start,
-              endTime: businessHours[day].end,
-            };
-          }
-          return [];
-        });
+        if (operationDay.closed || !availability) {
+          return []; // Skip closed days or days the employee isn't available
+        }
+
+        // Create shifts within operational hours while respecting employee availability
+        const startOperationTime = parseInt(operationDay.start.replace(':', ''), 10);
+        const endOperationTime = parseInt(operationDay.end.replace(':', ''), 10);
+        const startAvailabilityTime = parseInt(availability.start.replace(':', ''), 10);
+        const endAvailabilityTime = parseInt(availability.end.replace(':', ''), 10);
+
+        const shiftStart = Math.max(startOperationTime, startAvailabilityTime);
+        const shiftEnd = Math.min(endOperationTime, endAvailabilityTime);
+
+        if (shiftStart >= shiftEnd) {
+          return []; // No valid shifts for this day
+        }
+
+        return [{
+          employeeId: employee._id,
+          details: `Shift for ${employee.name}`,
+          startTime: new Date(startDate.getFullYear(), startDate.getMonth(), operationDay.dayOfMonth, Math.floor(shiftStart / 100), shiftStart % 100),
+          endTime: new Date(startDate.getFullYear(), startDate.getMonth(), operationDay.dayOfMonth, Math.floor(shiftEnd / 100), shiftEnd % 100),
+        }];
+      });
     });
 
-    const newSchedule = new Schedule({
-      manager: req.user.id,
-      scheduleData,
-      startDate,
-      endDate,
-    });
+    await Event.insertMany(events.map((event) => ({ ...event, scheduleId: schedule._id })));
 
-    await newSchedule.save();
-    res.status(201).json(newSchedule);
+    res.status(201).json({ schedule });
   } catch (error) {
-    console.error("Error generating schedule:", error.message);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error generating schedule:', error.message);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
 // Get all schedules for a manager
-exports.getAllSchedules = async (req, res) => {
+exports.getSchedules = async (req, res) => {
   try {
     const schedules = await Schedule.find({ manager: req.user.id });
     res.status(200).json(schedules);
-  } catch (err) {
-    console.error('Error fetching schedules:', err.message);
+  } catch (error) {
+    console.error('Error fetching schedules:', error.message);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Fetch individual schedule by ID
+// Get a specific schedule by ID
 exports.getScheduleById = async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (!id || id === 'undefined') {
-      return res.status(400).json({ message: 'Invalid schedule ID provided.' });
-    }
-
-    // Find the schedule by ID
     const schedule = await Schedule.findById(id);
 
-    if (!schedule) {
-      return res.status(404).json({ message: 'Schedule not found.' });
-    }
-
-    // Ensure the user is the manager who owns the schedule
-    if (schedule.manager.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to view this schedule.' });
+    if (!schedule || schedule.manager.toString() !== req.user.id) {
+      return res.status(404).json({ message: 'Schedule not found or not authorized' });
     }
 
     res.status(200).json(schedule);
-  } catch (err) {
-    console.error('Error fetching schedule by ID:', err.message);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Update an existing schedule
-exports.updateSchedule = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { scheduleData, startDate, endDate } = req.body;
-
-    // Find the schedule by ID
-    const schedule = await Schedule.findById(id);
-
-    if (!schedule) {
-      return res.status(404).json({ message: 'Schedule not found.' });
-    }
-
-    // Ensure the user is the manager who owns the schedule
-    if (schedule.manager.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to edit this schedule.' });
-    }
-
-    // Update schedule details
-    schedule.scheduleData = scheduleData;
-    schedule.startDate = startDate;
-    schedule.endDate = endDate;
-
-    await schedule.save();
-    res.status(200).json({ message: 'Schedule updated successfully.', schedule });
-  } catch (err) {
-    console.error('Error updating schedule:', err.message);
+  } catch (error) {
+    console.error('Error fetching schedule:', error.message);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -133,18 +103,19 @@ exports.deleteSchedule = async (req, res) => {
 
     const schedule = await Schedule.findById(id);
 
-    if (!schedule) {
-      return res.status(404).json({ message: 'Schedule not found.' });
+    if (!schedule || schedule.manager.toString() !== req.user.id) {
+      return res.status(404).json({ message: 'Schedule not found or not authorized' });
     }
 
-    if (schedule.manager.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to delete this schedule.' });
-    }
+    // Cascade delete: Remove associated events
+    await Event.deleteMany({ scheduleId: id });
 
-    await Schedule.deleteOne({ _id: id });
-    res.status(200).json({ message: 'Schedule deleted successfully.' });
-  } catch (err) {
-    console.error('Error deleting schedule:', err.message);
+    // Delete the schedule
+    await schedule.delete();
+
+    res.status(200).json({ message: 'Schedule deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting schedule:', error.message);
     res.status(500).json({ message: 'Server error' });
   }
 };

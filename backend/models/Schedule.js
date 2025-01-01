@@ -1,13 +1,9 @@
 const mongoose = require('mongoose');
 
-const ScheduleSchema = new mongoose.Schema({
+const scheduleSchema = new mongoose.Schema({
   manager: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-  },
-  scheduleData: {
-    type: Array,
     required: true,
   },
   startDate: {
@@ -21,8 +17,7 @@ const ScheduleSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 3888000, // 45 days in seconds
   },
-}, { timestamps: true });
+});
 
-module.exports = mongoose.model('Schedule', ScheduleSchema);
+module.exports = mongoose.model('Schedule', scheduleSchema);
