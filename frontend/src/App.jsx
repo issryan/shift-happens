@@ -12,8 +12,8 @@ import 'react-toastify/dist/ReactToastify.css';
 // Authenticated routes
 import Navbar from './components/Navbar/Navbar';
 import DashboardPage from './pages/Dashboard';
-import ScheduleOverview from './pages/ScheduleOverviewPage';
-import ScheduleEditPage from './pages/ScheduleEditPage';
+import SchedulePage from './pages/SchedulesPage';
+import ScheduleEditPage from './pages/EditSchedulePage';
 import Exports from './components/exports/Exports';
 import Profile from './pages/Profile';
 
@@ -42,7 +42,7 @@ const App = () => {
 
           {/* Authenticated routes */}
           <Route path="/dashboard" element={<ProtectedRoute element={<><Navbar /><DashboardPage /></>} />} />
-          <Route path="/schedule" element={<ProtectedRoute element={<ScheduleOverview />} />} />
+          <Route path="/schedule" element={<ProtectedRoute element={<SchedulePage />} />} />
           <Route
             path="/schedule/edit/new"
             element={<ProtectedRoute element={<ScheduleEditPage isNew={true} />} />}

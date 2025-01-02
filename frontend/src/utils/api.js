@@ -42,7 +42,7 @@ export const loginUser = async (loginData) => {
   }
 };
 
-//update user password
+// Update user password
 export const updateUserPassword = async (userData) => {
   const res = await axios.put(`${API_BASE_URL}/auth/profile`, userData, {
     headers: getAuthHeaders(),
@@ -180,6 +180,56 @@ export const updateSchedule = async (id, data) => {
 // Delete a schedule
 export const deleteSchedule = async (id) => {
   const res = await axios.delete(`${API_BASE_URL}/schedule/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* ----------------------------- Event (Shift) Management ----------------------------- */
+
+// Fetch all events for a schedule
+export const getEventsBySchedule = async (scheduleId) => {
+  const res = await axios.get(`${API_BASE_URL}/events/${scheduleId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// Add a shift
+export const addShift = async (shiftData) => {
+  const res = await axios.post(`${API_BASE_URL}/events/shift/add`, shiftData, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// Move a shift
+export const moveShift = async (shiftData) => {
+  const res = await axios.put(`${API_BASE_URL}/events/shift/move`, shiftData, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// Delete a shift
+export const deleteShift = async (shiftId) => {
+  const res = await axios.delete(`${API_BASE_URL}/events/shift/${shiftId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+// Update an event
+export const updateEvent = async (eventId, eventData) => {
+  const res = await axios.put(`${API_BASE_URL}/events/${eventId}`, eventData, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+//delete shifts in bulk
+export const deleteEvent = async (eventId) => {
+  const res = await axios.delete(`${API_BASE_URL}/events/${eventId}`, {
     headers: getAuthHeaders(),
   });
   return res.data;
