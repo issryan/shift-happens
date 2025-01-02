@@ -5,6 +5,7 @@ const {
   deleteEvent,
 } = require('../controllers/eventController');
 const { protect } = require('../middleware/authMiddleware');
+const { validateEventUpdate } = require('../utils/validation');
 
 const router = express.Router();
 

@@ -1,10 +1,5 @@
 const express = require('express');
-const {
-  generateSchedule,
-  getSchedules,
-  getScheduleById,
-  deleteSchedule,
-} = require('../controllers/scheduleController');
+const { generateSchedule, getSchedules, getScheduleById, deleteSchedule } = require('../controllers/scheduleController');
 const { protect } = require('../middleware/authMiddleware');
 const { validateSchedule } = require('../utils/validation');
 

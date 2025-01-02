@@ -30,6 +30,11 @@ app.use('/api/schedule', scheduleRoutes);
 // Default route
 app.get('/', (req, res) => res.send('Shift Happens API is running!'));
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Export the app for testing
+module.exports = app;
+
+// Start the server only if not in testing mode
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}

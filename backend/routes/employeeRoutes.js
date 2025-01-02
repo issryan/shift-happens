@@ -7,27 +7,27 @@ const {
   searchEmployees,
   updateEmployee,
 } = require('../controllers/employeeController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 const { validateEmployee, validate } = require('../utils/validation');
 
 const router = express.Router();
 
 // Get all employees for the logged-in manager
-router.get('/', authMiddleware, getEmployees);
+router.get('/', protect, getEmployees);
 
 // Get analytics for manager
-router.get('/analytics', authMiddleware, getAnalytics);
+router.get('/analytics', protect, getAnalytics);
 
 // Search employees
-router.get('/search', authMiddleware, searchEmployees);
+router.get('/search', protect, searchEmployees);
 
 // Add a new employee
-router.post('/', authMiddleware, validateEmployee, validate, addEmployee);
+router.post('/', protect, validateEmployee, validate, addEmployee);
 
 // Update employee details
-router.put('/:id', authMiddleware, updateEmployee);
+router.put('/:id', protect, updateEmployee);
 
 // Delete an employee
-router.delete('/:id', authMiddleware, deleteEmployee);
+router.delete('/:id', protect, deleteEmployee);
 
 module.exports = router;
