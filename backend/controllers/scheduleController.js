@@ -17,11 +17,18 @@ exports.generateSchedule = async (req, res) => {
 
     // Check for employees and operations
     const employees = await Employee.find({ manager: managerId });
-    const operations = await Operations.findOne({ manager: managerId });
+    const operations = await Operations.findOne({ userId: managerId });
 
-    if (!operations) {
-      return res.status(400).json({ message: 'Operational data not found. Please configure your business operations.' });
+    //debug logs
+    console.log("Fetched Operations:", operations);
+
+    if (!operations || !operations.hours || Object.keys(operations.hours).length === 0) {
+      return res.status(400).json({ message: "Operational data not found. Please configure your business operations." });
     }
+
+    //debig logs
+    console.log("Operational Hours:", operations.hours);
+    console.log("Minimum Employees:", operations.minEmployeesPerDay);
 
     if (employees.length === 0) {
       return res.status(400).json({ message: 'No employees found. Add employees before generating a schedule.' });
@@ -36,28 +43,32 @@ exports.generateSchedule = async (req, res) => {
 
     // Generate events
     const events = employees.flatMap((employee) => {
-      return operations.hours.flatMap((operationDay, day) => {
+      return Object.entries(operations.hours).flatMap(([day, operationDay]) => {
+        // Skip if the day is marked as closed
+        if (operationDay.closed) return [];
+    
         const availability = employee.availability.find((a) => a.day === day);
-
-        if (operationDay.closed || !availability) return []; // Skip closed or unavailable days
-
+        if (!availability) return []; // Skip if employee is unavailable
+    
+        // Calculate overlapping shift times
         const shiftStart = Math.max(
-          parseInt(operationDay.start.replace(':', ''), 10),
-          parseInt(availability.start.replace(':', ''), 10)
+          parseInt(operationDay.start.replace(":", ""), 10),
+          parseInt(availability.start.replace(":", ""), 10)
         );
-
         const shiftEnd = Math.min(
-          parseInt(operationDay.end.replace(':', ''), 10),
-          parseInt(availability.end.replace(':', ''), 10)
+          parseInt(operationDay.end.replace(":", ""), 10),
+          parseInt(availability.end.replace(":", ""), 10)
         );
-
-        if (shiftStart >= shiftEnd) return []; // Invalid shift timing
-
+    
+        // Validate the shift timing
+        if (shiftStart >= shiftEnd) return [];
+    
+        // Create and return shift
         return [{
           employeeId: employee._id,
           details: `Shift for ${employee.name}`,
-          startTime: new Date(startDate.getFullYear(), startDate.getMonth(), operationDay.dayOfMonth, Math.floor(shiftStart / 100), shiftStart % 100),
-          endTime: new Date(startDate.getFullYear(), startDate.getMonth(), operationDay.dayOfMonth, Math.floor(shiftEnd / 100), shiftEnd % 100),
+          startTime: new Date(startDate.getFullYear(), startDate.getMonth(), parseInt(shiftStart / 100), shiftStart % 100),
+          endTime: new Date(startDate.getFullYear(), startDate.getMonth(), parseInt(shiftEnd / 100), shiftEnd % 100),
         }];
       });
     });
