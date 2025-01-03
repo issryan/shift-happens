@@ -1,52 +1,119 @@
-import React, { useState, useEffect } from 'react';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from "react";
+import { fetchShifts, updateShift, addShift, deleteShift } from "../../api";
+import { Calendar, momentLocalizer } from "react-big-calendar";
+import moment from "moment";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const ShiftCalendar = ({ shifts, onDateSelect }) => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [filteredShifts, setFilteredShifts] = useState([]);
+const localizer = momentLocalizer(moment);
 
+const ShiftCalendar = ({ scheduleId }) => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch shifts for the selected schedule
   useEffect(() => {
-    // Filter shifts based on the selected date
-    const dateStr = selectedDate.toISOString().split('T')[0];
-    const matchingShifts = shifts.filter(
-      (shift) => new Date(shift.startTime).toISOString().split('T')[0] === dateStr
-    );
-    setFilteredShifts(matchingShifts);
-  }, [selectedDate, shifts]);
+    const loadShifts = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchShifts(scheduleId);
+        const formattedShifts = data.map((shift) => ({
+          id: shift._id,
+          title: `${shift.employee.name} (${shift.startTime} - ${shift.endTime})`,
+          start: new Date(shift.startTime),
+          end: new Date(shift.endTime),
+          employee: shift.employee,
+        }));
+        setEvents(formattedShifts);
+      } catch (error) {
+        toast.error("Failed to load shifts.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (scheduleId) loadShifts();
+  }, [scheduleId]);
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-    onDateSelect && onDateSelect(date);
+  // Handle adding a new shift
+  const handleAddShift = async ({ start, end }) => {
+    try {
+      const newShift = {
+        scheduleId,
+        startTime: start,
+        endTime: end,
+        employeeId: null, // Placeholder, choose employee in the modal
+      };
+      const savedShift = await addShift(newShift);
+      setEvents((prev) => [
+        ...prev,
+        {
+          id: savedShift._id,
+          title: `New Shift`,
+          start: new Date(savedShift.startTime),
+          end: new Date(savedShift.endTime),
+          employee: savedShift.employee,
+        },
+      ]);
+      toast.success("Shift added successfully.");
+    } catch (error) {
+      toast.error("Failed to add shift.");
+    }
+  };
+
+  // Handle updating an existing shift
+  const handleMoveShift = async ({ event, start, end }) => {
+    try {
+      const updatedShift = {
+        ...event,
+        startTime: start,
+        endTime: end,
+      };
+      await updateShift(updatedShift.id, updatedShift);
+      setEvents((prev) =>
+        prev.map((ev) =>
+          ev.id === event.id
+            ? { ...ev, start: new Date(start), end: new Date(end) }
+            : ev
+        )
+      );
+      toast.success("Shift updated successfully.");
+    } catch (error) {
+      toast.error("Failed to update shift.");
+    }
+  };
+
+  // Handle deleting a shift
+  const handleDeleteShift = async (shiftId) => {
+    try {
+      await deleteShift(shiftId);
+      setEvents((prev) => prev.filter((ev) => ev.id !== shiftId));
+      toast.success("Shift deleted successfully.");
+    } catch (error) {
+      toast.error("Failed to delete shift.");
+    }
   };
 
   return (
     <div className="p-4">
-      <Calendar
-        value={selectedDate}
-        onChange={handleDateChange}
-        className="rounded shadow border"
-      />
-      <div className="mt-4">
-        <h3 className="text-lg font-semibold">
-          Shifts for {selectedDate.toDateString()}
-        </h3>
-        {filteredShifts.length > 0 ? (
-          <ul className="mt-2">
-            {filteredShifts.map((shift) => (
-              <li
-                key={shift._id}
-                className="p-2 bg-gray-100 rounded shadow mb-2"
-              >
-                {shift.startTime} - {shift.endTime} (Employee: {shift.employeeId || 'Unassigned'})
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500 mt-2">No shifts for this date.</p>
-        )}
-      </div>
+      <ToastContainer />
+      {loading ? (
+        <p>Loading shifts...</p>
+      ) : (
+        <Calendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          style={{ height: 600 }}
+          selectable
+          onSelectSlot={handleAddShift} // Adding shifts
+          onEventDrop={handleMoveShift} // Moving shifts
+          resizable
+          onDoubleClickEvent={(event) => handleDeleteShift(event.id)} // Deleting shifts
+          draggableAccessor={() => true} // Enable drag-and-drop
+        />
+      )}
     </div>
   );
 };

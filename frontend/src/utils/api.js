@@ -162,6 +162,7 @@ export const generateSchedule = async ({ month, year, businessHours }) => {
       { month, year, businessHours },
       { headers: getAuthHeaders() }
     );
+    console.log("Payload being sent to the backend:", { month, year, businessHours });
     return res.data;
   } catch (error) {
     console.error('Error generating schedule:', error.message);

@@ -63,7 +63,7 @@ exports.generateSchedule = async (req, res) => {
     });
 
     await Event.insertMany(events.map((event) => ({ ...event, scheduleId: schedule._id })));
-
+    console.log("Payload received:", req.body);
     res.status(201).json({ schedule });
   } catch (error) {
     console.error('Error generating schedule:', error.message);
