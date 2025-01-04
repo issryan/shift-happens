@@ -1,6 +1,5 @@
 const Schedule = require('../models/Schedule');
 const Event = require('../models/Event');
-const Employee = require('../models/Employee');
 const Operations = require('../models/Operations');
 
 // Generate schedule
@@ -9,73 +8,38 @@ exports.generateSchedule = async (req, res) => {
     const { month, year } = req.body;
     const managerId = req.user.id;
 
-    // Check if manager already has 3 active schedules
-    const activeSchedules = await Schedule.countDocuments({ manager: managerId });
-    if (activeSchedules >= 3) {
-      return res.status(400).json({ message: 'Limit of 3 active schedules reached. Delete old schedules to create new ones.' });
+    if (!month || !year) {
+      return res.status(400).json({ message: 'Invalid input. Provide month and year.' });
     }
 
-    // Check for employees and operations
-    const employees = await Employee.find({ manager: managerId });
+    // Fetch operational hours
     const operations = await Operations.findOne({ userId: managerId });
-
-    //debug logs
-    console.log("Fetched Operations:", operations);
-
-    if (!operations || !operations.hours || Object.keys(operations.hours).length === 0) {
-      return res.status(400).json({ message: "Operational data not found. Please configure your business operations." });
+    if (!operations || !operations.hours) {
+      return res.status(400).json({ message: 'Operational hours not configured for this manager.' });
     }
 
-    //debig logs
-    console.log("Operational Hours:", operations.hours);
-    console.log("Minimum Employees:", operations.minEmployeesPerDay);
+    // Schedule start and end dates
+    const scheduleStart = new Date(year, month - 1, 1);
+    const scheduleEnd = new Date(year, month, 0);
 
-    if (employees.length === 0) {
-      return res.status(400).json({ message: 'No employees found. Add employees before generating a schedule.' });
+    // Reference operational hours to validate
+    const operationalHours = operations.hours;
+    const validDays = Object.entries(operationalHours).filter(([day, hours]) => !hours.closed);
+
+    if (validDays.length === 0) {
+      return res.status(400).json({ message: 'All business days are marked as closed.' });
     }
 
-    // Create schedule
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-
-    const schedule = new Schedule({ manager: managerId, startDate, endDate });
-    await schedule.save();
-
-    // Generate events
-    const events = employees.flatMap((employee) => {
-      return Object.entries(operations.hours).flatMap(([day, operationDay]) => {
-        // Skip if the day is marked as closed
-        if (operationDay.closed) return [];
-    
-        const availability = employee.availability.find((a) => a.day === day);
-        if (!availability) return []; // Skip if employee is unavailable
-    
-        // Calculate overlapping shift times
-        const shiftStart = Math.max(
-          parseInt(operationDay.start.replace(":", ""), 10),
-          parseInt(availability.start.replace(":", ""), 10)
-        );
-        const shiftEnd = Math.min(
-          parseInt(operationDay.end.replace(":", ""), 10),
-          parseInt(availability.end.replace(":", ""), 10)
-        );
-    
-        // Validate the shift timing
-        if (shiftStart >= shiftEnd) return [];
-    
-        // Create and return shift
-        return [{
-          employeeId: employee._id,
-          details: `Shift for ${employee.name}`,
-          startTime: new Date(startDate.getFullYear(), startDate.getMonth(), parseInt(shiftStart / 100), shiftStart % 100),
-          endTime: new Date(startDate.getFullYear(), startDate.getMonth(), parseInt(shiftEnd / 100), shiftEnd % 100),
-        }];
-      });
+    // Create a new schedule
+    const schedule = await Schedule.create({
+      manager: managerId,
+      startDate: scheduleStart,
+      endDate: scheduleEnd,
     });
 
-    await Event.insertMany(events.map((event) => ({ ...event, scheduleId: schedule._id })));
-    console.log("Payload received:", req.body);
-    res.status(201).json({ schedule });
+    console.log('New Schedule Created:', schedule);
+
+    res.status(201).json({ message: 'Schedule created successfully', schedule });
   } catch (error) {
     console.error('Error generating schedule:', error.message);
     res.status(500).json({ message: `Server error: ${error.message}` });
@@ -131,85 +95,6 @@ exports.deleteSchedule = async (req, res) => {
   } catch (error) {
     console.error('Error deleting schedule:', error.message);
     res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Helper function: Auto-generate shifts
-exports.autoSchedule = async (req, res) => {
-  const { startDate, endDate, businessHours } = req.body;
-
-  try {
-    // Validate input
-    if (!startDate || !endDate || !businessHours) {
-      return res.status(400).json({ message: 'Invalid input. Ensure startDate, endDate, and businessHours are provided.' });
-    }
-
-    const employees = await Employee.find({}); // Fetch all employees
-    if (!employees || employees.length === 0) {
-      return res.status(400).json({ message: 'No employees found. Add employees before generating a schedule.' });
-    }
-
-    const shifts = [];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= new Date(endDate)) {
-      const dayOfWeek = currentDate.getDay(); // Get day of the week (0-6)
-
-      const dailyHours = businessHours[dayOfWeek]; // Fetch hours for the current day
-      if (!dailyHours || dailyHours.closed) {
-        currentDate.setDate(currentDate.getDate() + 1);
-        continue;
-      }
-
-      employees.forEach((employee) => {
-        const availability = employee.availability.find((a) => a.day === dayOfWeek);
-        if (availability) {
-          const shiftStart = Math.max(
-            parseInt(dailyHours.start.replace(':', ''), 10),
-            parseInt(availability.start.replace(':', ''), 10)
-          );
-
-          const shiftEnd = Math.min(
-            parseInt(dailyHours.end.replace(':', ''), 10),
-            parseInt(availability.end.replace(':', ''), 10)
-          );
-
-          if (shiftStart < shiftEnd) {
-            shifts.push({
-              date: new Date(currentDate),
-              startTime: shiftStart,
-              endTime: shiftEnd,
-              employee: employee._id,
-            });
-          } else {
-            console.log(`Skipped shift for ${employee.name}: Incompatible hours.`);
-          }
-        }
-      });
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    if (shifts.length === 0) {
-      return res.status(400).json({ message: 'No valid shifts could be generated with the given constraints.' });
-    }
-
-    // Save the generated schedule and shifts
-    const schedule = await Schedule.create({
-      manager: req.user.id,
-      startDate,
-      endDate,
-      shifts,
-    });
-
-    res.status(201).json({
-      message: 'Schedule generated successfully',
-      schedule,
-      totalShifts: shifts.length,
-    });
-  } catch (error) {
-    console.error('Error generating schedule:', error.message);
-    res.status(500).json({ message: 'Error generating schedule', error });
   }
 };
 

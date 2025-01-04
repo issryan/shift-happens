@@ -7,6 +7,7 @@ const employeeRoutes = require('./routes/employeeRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const businessRoutes = require('./routes/businessRoutes');
 const operationsRoutes = require('./routes/operationsRoutes');
+const eventRoutes = require('./routes/eventRoutes');
 
 // Initialize environment variables
 dotenv.config();
@@ -26,6 +27,7 @@ app.use('/api/business', businessRoutes);
 app.use('/api/operations', operationsRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/schedule', scheduleRoutes);
+app.use('/api/events', eventRoutes);
 
 // Default route
 app.get('/', (req, res) => res.send('Shift Happens API is running!'));
