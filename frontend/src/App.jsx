@@ -22,7 +22,7 @@ const ProtectedRoute = ({ element }) => {
   const { auth, loading } = useContext(AuthContext);
 
   if (loading) {
-    return <div>Loading...</div>; // Show a loading spinner or placeholder
+    return <div>Loading...</div>;
   }
 
   return auth.isAuthenticated ? element : <Navigate to="/login" />;
@@ -41,18 +41,21 @@ const App = () => {
           <Route path="/operations" element={<OperationsInfo />} />
 
           {/* Authenticated routes */}
-          <Route path="/dashboard" element={<ProtectedRoute element={<><Navbar /><DashboardPage /></>} />} />
+          <Route
+            path="/dashboard"
+            element={<ProtectedRoute element={<><Navbar /><DashboardPage /></>} />}
+          />
           <Route path="/schedule" element={<ProtectedRoute element={<SchedulePage />} />} />
+          <Route path="/schedule/edit/:id" element={<ProtectedRoute element={<ScheduleEditPage isNew={false} />} />} />
+          <Route path="/schedule/edit/new" element={<ProtectedRoute element={<ScheduleEditPage isNew={true} />} />} />
           <Route
-            path="/schedule/edit/new"
-            element={<ProtectedRoute element={<ScheduleEditPage isNew={true} />} />}
+            path="/exports"
+            element={<ProtectedRoute element={<><Navbar /><Exports /></>} />}
           />
           <Route
-            path="/schedule/:id"
-            element={<ProtectedRoute element={<ScheduleEditPage isNew={false} />} />}
+            path="/profile"
+            element={<ProtectedRoute element={<><Navbar /><Profile /></>} />}
           />
-          <Route path="/exports" element={<ProtectedRoute element={<><Navbar /><Exports /></>} />} />
-          <Route path="/profile" element={<ProtectedRoute element={<><Navbar /><Profile /></>} />} />
         </Routes>
         <ToastContainer />
       </Router>

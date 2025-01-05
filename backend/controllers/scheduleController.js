@@ -79,22 +79,24 @@ exports.deleteSchedule = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Find the schedule by ID
     const schedule = await Schedule.findById(id);
 
+    // Check if the schedule exists and the user is authorized
     if (!schedule || schedule.manager.toString() !== req.user.id) {
-      return res.status(404).json({ message: 'Schedule not found or not authorized' });
+      return res.status(404).json({ message: "Schedule not found or not authorized" });
     }
 
     // Cascade delete: Remove associated events
     await Event.deleteMany({ scheduleId: id });
 
     // Delete the schedule
-    await schedule.delete();
+    await Schedule.deleteOne({ _id: id }); // Updated to use deleteOne
 
-    res.status(200).json({ message: 'Schedule deleted successfully' });
+    res.status(200).json({ message: "Schedule deleted successfully" });
   } catch (error) {
-    console.error('Error deleting schedule:', error.message);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error deleting schedule:", error.message);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

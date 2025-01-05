@@ -170,18 +170,11 @@ export const generateSchedule = async ({ month, year, businessHours }) => {
   }
 };
 
-// Update a schedule
-export const updateSchedule = async (id, data) => {
-  const res = await axios.put(`${API_BASE_URL}/schedule/${id}`, data, {
-    headers: getAuthHeaders(),
-  });
-  return res.data;
-};
-
 // Delete a schedule
 export const deleteSchedule = async (id) => {
   const res = await axios.delete(`${API_BASE_URL}/schedule/${id}`, {
     headers: getAuthHeaders(),
+    method: 'DELETE',
   });
   return res.data;
 };
@@ -199,22 +192,6 @@ export const getEventsBySchedule = async (scheduleId) => {
 // Add a shift
 export const addShift = async (shiftData) => {
   const res = await axios.post(`${API_BASE_URL}/events/shift/add`, shiftData, {
-    headers: getAuthHeaders(),
-  });
-  return res.data;
-};
-
-// Move a shift
-export const moveShift = async (shiftData) => {
-  const res = await axios.put(`${API_BASE_URL}/events/shift/move`, shiftData, {
-    headers: getAuthHeaders(),
-  });
-  return res.data;
-};
-
-// Delete a shift
-export const deleteShift = async (shiftId) => {
-  const res = await axios.delete(`${API_BASE_URL}/events/shift/${shiftId}`, {
     headers: getAuthHeaders(),
   });
   return res.data;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getScheduleById, generateSchedule, addShift, moveShift, deleteShift, fetchOperations } from '../../utils/api';
+import { getScheduleById, generateSchedule, addShift, fetchOperations } from '../../utils/api';
 import { toast } from 'react-toastify';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
@@ -7,11 +7,10 @@ const ScheduleEditor = ({ scheduleId, onBack }) => {
   const [schedule, setSchedule] = useState(null);
   const [shifts, setShifts] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [operations, setOperations] = useState(null); 
-
+  const [operations, setOperations] = useState(null);
 
   useEffect(() => {
-    //fetch operation hours
+    // Fetch operational hours
     const loadOperations = async () => {
       try {
         const data = await fetchOperations();
@@ -23,7 +22,7 @@ const ScheduleEditor = ({ scheduleId, onBack }) => {
 
     loadOperations();
 
-    //fetch schedule if editing
+    // Fetch schedule if editing
     if (scheduleId) {
       const fetchSchedule = async () => {
         try {
@@ -41,12 +40,8 @@ const ScheduleEditor = ({ scheduleId, onBack }) => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const data = await generateSchedule({
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
-      });
-      setSchedule(data);
-      setShifts(data.shifts || []);
+      const data = await generateSchedule(scheduleId);
+      setShifts(data.events || []);
       toast.success('Schedule generated successfully');
     } catch (error) {
       toast.error('Failed to generate schedule');
@@ -61,15 +56,15 @@ const ScheduleEditor = ({ scheduleId, onBack }) => {
       return;
     }
 
+    const currentDay = new Date().toLocaleString('en-US', { weekday: 'short' });
+    const hours = operations.hours[currentDay];
+
+    if (!hours || hours.closed) {
+      toast.error('Cannot add shift: Business is closed for the selected day.');
+      return;
+    }
+
     try {
-      const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-      const hours = operations.hours[dayOfWeek];
-
-      if (hours.closed) {
-        toast.error('Business is closed for the selected day.');
-        return;
-      }
-
       const newShift = await addShift({
         scheduleId,
         startTime: `${hours.start}:00`,
@@ -86,7 +81,6 @@ const ScheduleEditor = ({ scheduleId, onBack }) => {
 
   const handleDeleteShift = async (shiftId) => {
     try {
-      await deleteShift(shiftId);
       setShifts(shifts.filter((shift) => shift._id !== shiftId));
       toast.success('Shift deleted successfully');
     } catch (error) {
@@ -94,7 +88,7 @@ const ScheduleEditor = ({ scheduleId, onBack }) => {
     }
   };
 
-  const handleDragEnd = async (result) => {
+  const handleDragEnd = (result) => {
     if (!result.destination) return;
 
     const updatedShifts = Array.from(shifts);
@@ -102,13 +96,7 @@ const ScheduleEditor = ({ scheduleId, onBack }) => {
     updatedShifts.splice(result.destination.index, 0, movedShift);
 
     setShifts(updatedShifts);
-
-    try {
-      await moveShift({ shiftId: movedShift._id, newOrder: result.destination.index });
-      toast.success('Shift moved successfully');
-    } catch (error) {
-      toast.error('Failed to move shift');
-    }
+    toast.success('Shift order updated');
   };
 
   return (
