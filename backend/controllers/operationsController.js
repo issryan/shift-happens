@@ -3,37 +3,22 @@ const Operations = require('../models/Operations');
 
 exports.createOperations = async (req, res) => {
   try {
-    const { businessHours, minEmployeesPerDay } = req.body;
+    const { hours, minEmployeesPerDay, businessId } = req.body; 
     const userId = req.user.id;
 
-    // Check if operations already exist for the user
-    const existingOperations = await Operations.findOne({ userId });
-    if (existingOperations) {
-      return res.status(400).json({ message: 'Operations already exist for this user.' });
-    }
-
-    // Create business if it doesn't exist
-    let business = await Business.findOne({ userId });
-    if (!business) {
-      business = await Business.create({
-        userId,
-        name: 'Default Business Name',
-        location: 'Default Location',
-      });
-    }
-
-    // Ensure proper handling of 'closed' days
-    for (let day in businessHours) {
-      if (businessHours[day].closed) {
-        businessHours[day].start = null;
-        businessHours[day].end = null;
+    // Normalize the hours for days marked as closed
+    hours.forEach((day) => {
+      if (day.closed) {
+        day.start = null;
+        day.end = null;
       }
-    }
+    });
 
+    // Create the new Operations document
     const newOperations = await Operations.create({
       userId,
-      businessId: business._id,
-      hours: businessHours,
+      businessId,
+      hours,
       minEmployeesPerDay,
     });
 
@@ -57,16 +42,28 @@ exports.getOperations = async (req, res) => {
 
 exports.updateOperations = async (req, res) => {
   try {
-    const userId = req.user.id;
     const { hours, minEmployeesPerDay } = req.body;
+    const { id } = req.params;
 
-    const operations = await Operations.findOneAndUpdate(
-      { userId },
-      { hours, minEmployeesPerDay },
-      { new: true }
-    );
-    res.status(200).json(operations);
+    const operations = await Operations.findById(id);
+    if (!operations) return res.status(404).json({ success: false, message: 'Operations not found' });
+
+    // Update hours
+    hours.forEach((day) => {
+      if (day.closed) {
+        day.start = null;
+        day.end = null;
+      }
+    });
+
+    operations.hours = hours;
+    operations.minEmployeesPerDay = minEmployeesPerDay;
+
+    await operations.save();
+
+    res.status(200).json({ success: true, operations });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error updating operations:', error.message);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
