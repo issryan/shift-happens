@@ -1,6 +1,7 @@
 const express = require('express');
 const {
-  addOrUpdateEvent,
+  addEvent,
+  updateEvent,
   deleteEvent,
   autoGenerateEvents
 } = require('../controllers/eventController');
@@ -9,8 +10,11 @@ const { validateEventUpdate } = require('../utils/validation');
 
 const router = express.Router();
 
-// Route to add or update an event
-router.post('/add-or-update', protect, addOrUpdateEvent);
+// Route to add
+router.post('/add', protect, addEvent);
+
+//Update an event
+router.put('/update', protect, updateEvent);
 
 // Route to delete an event
 router.delete('/:id',protect, deleteEvent);

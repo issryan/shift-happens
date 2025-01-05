@@ -13,15 +13,38 @@ const validateAvailability = (employee, startTime, endTime) => {
     new Date(startTime).getHours() < parseInt(availability.start.split(':')[0]) ||
     new Date(endTime).getHours() > parseInt(availability.end.split(':')[0])
   ) {
-    return false; // Not available
+    return false;
   }
-  return true; // Available
+  return true;
 };
 
-// Add or Update Event
-exports.addOrUpdateEvent = async (req, res) => {
+// Utility to validate operational hours
+const validateOperationalHours = (startTime, endTime, hours) => {
+  const dayOfWeek = new Date(startTime).toLocaleString('en-US', { weekday: 'short' });
+  const dayOps = hours.find((day) => day.day === dayOfWeek);
+
+  if (!dayOps || dayOps.closed) {
+    return false;
+  }
+
+  const shiftStart = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+  const shiftEnd = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+
+  const opsStart = parseInt(dayOps.start.split(':')[0]) * 60 + parseInt(dayOps.start.split(':')[1]);
+  const opsEnd = parseInt(dayOps.end.split(':')[0]) * 60 + parseInt(dayOps.end.split(':')[1]);
+
+  return shiftStart >= opsStart && shiftEnd <= opsEnd;
+};
+
+// Add Event
+exports.addEvent = async (req, res) => {
   try {
-    const { scheduleId, employeeId, startTime, endTime, eventId } = req.body;
+    const { scheduleId, employeeId, startTime, endTime } = req.body;
+
+    // Check for required fields
+    if (!scheduleId || !employeeId || !startTime || !endTime) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
 
     // Validate schedule
     const schedule = await Schedule.findById(scheduleId);
@@ -44,31 +67,67 @@ exports.addOrUpdateEvent = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Shift timing conflicts with employee availability' });
     }
 
-    let event;
-    if (eventId) {
-      // Update existing event
-      event = await Event.findById(eventId);
-      if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
-
-      event.startTime = startTime;
-      event.endTime = endTime;
-      event.employeeId = employeeId;
-      event.details = `Updated shift for ${employee.name}`;
-    } else {
-      // Add new event
-      event = new Event({
-        scheduleId,
-        employeeId,
-        startTime,
-        endTime,
-        details: `New shift for ${employee.name}`,
-      });
-    }
+    // Add new event
+    const event = new Event({
+      scheduleId,
+      employeeId,
+      startTime,
+      endTime,
+      details: `New shift for ${employee.name}`,
+    });
 
     await event.save();
-    res.status(201).json({ success: true, message: eventId ? 'Event updated successfully' : 'Event created successfully', event });
+    res.status(201).json({ success: true, message: 'Event created successfully', event });
   } catch (error) {
-    console.error('Error adding or updating event:', error.message);
+    console.error('Error in addEvent:', error.message);
+    res.status(500).json({ success: false, message: 'Server error', error });
+  }
+};
+
+//Update event
+exports.updateEvent = async (req, res) => {
+  try {
+    const { eventId, startTime, endTime } = req.body;
+
+    // Check for required fields
+    if (!eventId || !startTime || !endTime) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    // Validate event
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+
+    // Validate schedule
+    const schedule = await Schedule.findById(event.scheduleId);
+    if (!schedule) return res.status(404).json({ success: false, message: 'Schedule not found' });
+
+    // Validate employee
+    const employee = await Employee.findById(event.employeeId);
+    if (!employee) return res.status(404).json({ success: false, message: 'Employee not found' });
+
+    // Validate operational hours
+    const operations = await Operations.findOne({ userId: schedule.manager });
+    if (!operations) return res.status(404).json({ success: false, message: 'Operational hours not found' });
+
+    if (!validateOperationalHours(startTime, endTime, operations.hours)) {
+      return res.status(400).json({ success: false, message: 'Shift falls outside business hours' });
+    }
+
+    // Validate employee availability
+    if (!validateAvailability(employee, startTime, endTime)) {
+      return res.status(400).json({ success: false, message: 'Shift timing conflicts with employee availability' });
+    }
+
+    // Update event
+    event.startTime = startTime;
+    event.endTime = endTime;
+    event.details = `Updated shift for ${employee.name}`;
+
+    await event.save();
+    res.status(200).json({ success: true, message: 'Event updated successfully', event });
+  } catch (error) {
+    console.error('Error in updateEvent:', error.message);
     res.status(500).json({ success: false, message: 'Server error', error });
   }
 };
@@ -89,55 +148,43 @@ exports.deleteEvent = async (req, res) => {
   }
 };
 
+// Auto-Generate Events
 exports.autoGenerateEvents = async (req, res) => {
   try {
     const { scheduleId } = req.body;
 
     // Validate schedule
     const schedule = await Schedule.findById(scheduleId);
-    if (!schedule) {
-      return res.status(404).json({ success: false, message: 'Schedule not found' });
-    }
+    if (!schedule) return res.status(404).json({ success: false, message: 'Schedule not found' });
 
-    // Fetch operational hours and minimum employees
+    // Fetch operational hours
     const operations = await Operations.findOne({ userId: schedule.manager });
-    if (!operations) {
-      return res.status(404).json({ success: false, message: 'Operational hours not found' });
-    }
+    if (!operations) return res.status(404).json({ success: false, message: 'Operational hours not found' });
 
-    // Fetch all employees for the manager
     const employees = await Employee.find({ manager: schedule.manager });
-    if (!employees || employees.length === 0) {
-      return res.status(400).json({ success: false, message: 'No employees found for this manager' });
-    }
+    if (!employees || employees.length === 0) return res.status(400).json({ success: false, message: 'No employees found for this manager' });
 
     const events = [];
-    const employeeHours = {}; // Track total hours worked for each employee
-    employees.forEach((emp) => (employeeHours[emp._id] = 0));
+    const weeklyHours = {}; // Track weekly hours for each employee
 
-    const operationalHours = operations.hours;
-    const minEmployeesPerDay = operations.minEmployeesPerDay;
+    for (const employee of employees) {
+      weeklyHours[employee._id] = {};
+    }
 
-    // Generate events for each day in the schedule
     for (
       let currentDate = new Date(schedule.startDate);
       currentDate <= new Date(schedule.endDate);
       currentDate.setDate(currentDate.getDate() + 1)
     ) {
       const dayOfWeek = currentDate.toLocaleString('en-US', { weekday: 'short' });
-      const dayOps = operationalHours[dayOfWeek];
+      const dayOps = operations.hours.find((day) => day.day === dayOfWeek);
 
-      if (!dayOps || dayOps.closed) {
-        console.log(`Skipped ${dayOfWeek}: Business closed.`);
-        continue;
-      }
+      if (!dayOps || dayOps.closed) continue;
 
-      const requiredEmployees = minEmployeesPerDay[dayOfWeek] || 0;
-
+      const requiredEmployees = operations.minEmployeesPerDay[dayOfWeek] || 0;
       let employeesScheduled = 0;
-      for (const employee of employees) {
-        if (employeesScheduled >= requiredEmployees) break;
 
+      for (const employee of employees) {
         const availability = employee.availability.find((a) => a.day === dayOfWeek);
         if (!availability) continue;
 
@@ -150,13 +197,18 @@ exports.autoGenerateEvents = async (req, res) => {
           parseInt(availability.end.replace(':', ''), 10)
         );
 
-        if (shiftStart >= shiftEnd) continue; // Skip incompatible hours
+        if (shiftStart >= shiftEnd) continue;
 
-        // Calculate shift hours
         const shiftHours = (shiftEnd - shiftStart) / 100;
-        if (employee.hoursRequired && employeeHours[employee._id] + shiftHours > employee.hoursRequired) continue;
+        const currentWeek = `${currentDate.getFullYear()}-W${Math.ceil((currentDate.getDate() - currentDate.getDay() + 1) / 7)}`;
+        if (!weeklyHours[employee._id][currentWeek]) {
+          weeklyHours[employee._id][currentWeek] = 0;
+        }
 
-        // Create event
+        if (employee.hoursRequired && weeklyHours[employee._id][currentWeek] + shiftHours > employee.hoursRequired) {
+          continue;
+        }
+
         const event = new Event({
           scheduleId,
           employeeId: employee._id,
@@ -178,12 +230,13 @@ exports.autoGenerateEvents = async (req, res) => {
         });
 
         events.push(event);
-        employeeHours[employee._id] += shiftHours;
+        weeklyHours[employee._id][currentWeek] += shiftHours;
         employeesScheduled++;
+
+        if (employeesScheduled >= requiredEmployees) break;
       }
     }
 
-    // Save events to the database
     if (events.length > 0) {
       await Event.insertMany(events);
       res.status(201).json({ success: true, message: 'Events auto-generated successfully', events });
