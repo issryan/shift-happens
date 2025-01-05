@@ -8,11 +8,7 @@ const validateAvailability = (employee, startTime, endTime) => {
   const dayOfWeek = new Date(startTime).toLocaleString('en-US', { weekday: 'short' });
   const availability = employee.availability.find((a) => a.day === dayOfWeek);
 
-  if (
-    !availability ||
-    new Date(startTime).getHours() < parseInt(availability.start.split(':')[0]) ||
-    new Date(endTime).getHours() > parseInt(availability.end.split(':')[0])
-  ) {
+  if (!availability || !availability.start || !availability.end) {
     return false;
   }
   return true;
@@ -27,11 +23,14 @@ const validateOperationalHours = (startTime, endTime, hours) => {
     return false;
   }
 
-  const shiftStart = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
-  const shiftEnd = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+  const shiftStart = new Date(startTime);
+  const shiftEnd = new Date(endTime);
 
-  const opsStart = parseInt(dayOps.start.split(':')[0]) * 60 + parseInt(dayOps.start.split(':')[1]);
-  const opsEnd = parseInt(dayOps.end.split(':')[0]) * 60 + parseInt(dayOps.end.split(':')[1]);
+  const [opsStartHours, opsStartMinutes] = dayOps.start.split(':').map(Number);
+  const [opsEndHours, opsEndMinutes] = dayOps.end.split(':').map(Number);
+
+  const opsStart = new Date(shiftStart.setHours(opsStartHours, opsStartMinutes));
+  const opsEnd = new Date(shiftStart.setHours(opsEndHours, opsEndMinutes));
 
   return shiftStart >= opsStart && shiftEnd <= opsEnd;
 };
@@ -58,6 +57,7 @@ exports.addEvent = async (req, res) => {
     const operations = await Operations.findOne({ userId: schedule.manager });
     if (!operations) return res.status(404).json({ success: false, message: 'Operational hours not found' });
 
+    // Validate operational hours
     if (!validateOperationalHours(startTime, endTime, operations.hours)) {
       return res.status(400).json({ success: false, message: 'Shift falls outside business hours' });
     }
@@ -67,7 +67,7 @@ exports.addEvent = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Shift timing conflicts with employee availability' });
     }
 
-    // Add new event
+    // Create new event
     const event = new Event({
       scheduleId,
       employeeId,
@@ -102,24 +102,23 @@ exports.updateEvent = async (req, res) => {
     const schedule = await Schedule.findById(event.scheduleId);
     if (!schedule) return res.status(404).json({ success: false, message: 'Schedule not found' });
 
-    // Validate employee
-    const employee = await Employee.findById(event.employeeId);
-    if (!employee) return res.status(404).json({ success: false, message: 'Employee not found' });
-
-    // Validate operational hours
     const operations = await Operations.findOne({ userId: schedule.manager });
     if (!operations) return res.status(404).json({ success: false, message: 'Operational hours not found' });
 
+    // Validate operational hours
     if (!validateOperationalHours(startTime, endTime, operations.hours)) {
       return res.status(400).json({ success: false, message: 'Shift falls outside business hours' });
     }
+
+    const employee = await Employee.findById(event.employeeId);
+    if (!employee) return res.status(404).json({ success: false, message: 'Employee not found' });
 
     // Validate employee availability
     if (!validateAvailability(employee, startTime, endTime)) {
       return res.status(400).json({ success: false, message: 'Shift timing conflicts with employee availability' });
     }
 
-    // Update event
+    // Update event details
     event.startTime = startTime;
     event.endTime = endTime;
     event.details = `Updated shift for ${employee.name}`;
