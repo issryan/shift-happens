@@ -1,5 +1,6 @@
 const express = require('express');
 const {
+  getEventsBySchedule,
   addEvent,
   updateEvent,
   deleteEvent,
@@ -9,6 +10,9 @@ const { protect } = require('../middleware/authMiddleware');
 const { validateEventUpdate } = require('../utils/validation');
 
 const router = express.Router();
+
+//Fetch events for a schedule
+router.get('/schedule/:scheduleId', getEventsBySchedule);
 
 // Route to add
 router.post('/add', protect, addEvent);

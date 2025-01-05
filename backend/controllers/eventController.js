@@ -3,6 +3,39 @@ const Employee = require('../models/Employee');
 const Schedule = require('../models/Schedule');
 const Operations = require('../models/Operations');
 
+// Fetch all events for a schedule
+exports.getEventsBySchedule = async (req, res) => {
+  try {
+    const { scheduleId } = req.params;
+
+    if (!scheduleId) {
+      return res.status(400).json({ success: false, message: 'Schedule ID is required' });
+    }
+
+    // Fetch events for the given schedule ID
+    const events = await Event.find({ scheduleId }).populate('employeeId', 'name');
+
+    if (!events || events.length === 0) {
+      return res.status(404).json({ success: false, message: 'No events found for this schedule' });
+    }
+
+    // Map events to calendar format
+    const formattedEvents = events.map((event) => ({
+      id: event._id,
+      title: `${event.details} (${event.employeeId.name})`,
+      start: event.startTime,
+      end: event.endTime,
+      employeeId: event.employeeId._id,
+      details: event.details,
+    }));
+
+    res.status(200).json({ success: true, events: formattedEvents });
+  } catch (error) {
+    console.error('Error fetching events by schedule:', error.message);
+    res.status(500).json({ success: false, message: 'Server error', error });
+  }
+};
+
 // Utility to validate employee availability
 const validateAvailability = (employee, startTime, endTime) => {
   const dayOfWeek = new Date(startTime).toLocaleString('en-US', { weekday: 'short' });
