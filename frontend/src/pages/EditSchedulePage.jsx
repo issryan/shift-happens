@@ -16,7 +16,8 @@ const EditSchedulePage = () => {
         const data = await getScheduleById(scheduleId);
         setSchedule(data);
       } catch (error) {
-        toast.error('Failed to load the schedule.');
+        toast.error('Failed to fetch the schedule.');
+        navigate('/schedules'); // Redirects to the schedules list if an error occurs
       } finally {
         setIsLoading(false);
       }
@@ -24,9 +25,6 @@ const EditSchedulePage = () => {
 
     if (scheduleId) {
       fetchSchedule();
-    } else {
-      toast.error('No schedule selected.');
-      navigate('/schedules');
     }
   }, [scheduleId, navigate]);
 
@@ -36,18 +34,21 @@ const EditSchedulePage = () => {
 
   return (
     <div className="p-4">
-      <button onClick={handleBack} className="text-blue-500 underline">
+      <button
+        onClick={handleBack}
+        className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded"
+      >
         Back to Schedules
       </button>
       {isLoading ? (
-        <p className="text-gray-500">Loading schedule...</p>
+        <p className="text-gray-500 mt-4">Loading schedule...</p>
       ) : schedule ? (
         <div>
-          <h1 className="text-2xl font-bold mb-4">{`Edit Schedule: ${schedule.name}`}</h1>
-          <ScheduleEditor scheduleId={scheduleId} onBack={handleBack} />
+          <h1 className="text-2xl font-bold mt-4 mb-6">{`Edit Schedule: ${schedule.name || 'Unnamed Schedule'}`}</h1>
+          <ScheduleEditor schedule={schedule} onBack={handleBack} />
         </div>
       ) : (
-        <p className="text-red-500">Failed to load the schedule. Please try again.</p>
+        <p className="text-red-500 mt-4">Failed to load the schedule. Please try again.</p>
       )}
     </div>
   );

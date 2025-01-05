@@ -63,8 +63,12 @@ exports.getScheduleById = async (req, res) => {
     const { id } = req.params;
     const schedule = await Schedule.findById(id);
 
-    if (!schedule || schedule.manager.toString() !== req.user.id) {
-      return res.status(404).json({ message: 'Schedule not found or not authorized' });
+    if (!schedule) {
+      return res.status(404).json({ message: 'Schedule not found' });
+    }
+
+    if (schedule.manager.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to access this schedule' });
     }
 
     res.status(200).json(schedule);

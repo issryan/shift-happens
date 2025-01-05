@@ -1,161 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import { getScheduleById, generateSchedule, addShift, fetchOperations } from '../../utils/api';
+import { autoGenerateEvents, addShift, getEventsBySchedule } from '../../utils/api';
 import { toast } from 'react-toastify';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import ShiftCalendar from './ShiftCalendar';
 
-const ScheduleEditor = ({ scheduleId, onBack }) => {
-  const [schedule, setSchedule] = useState(null);
+const ScheduleEditor = ({ schedule, onBack }) => {
   const [shifts, setShifts] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [operations, setOperations] = useState(null);
 
   useEffect(() => {
-    // Fetch operational hours
-    const loadOperations = async () => {
+    const loadShifts = async () => {
       try {
-        const data = await fetchOperations();
-        setOperations(data);
+        const events = await getEventsBySchedule(schedule._id);
+        setShifts(events);
       } catch (error) {
-        toast.error('Failed to load business hours');
+        toast.error('Failed to load events.');
       }
     };
 
-    loadOperations();
-
-    // Fetch schedule if editing
-    if (scheduleId) {
-      const fetchSchedule = async () => {
-        try {
-          const data = await getScheduleById(scheduleId);
-          setSchedule(data);
-          setShifts(data.shifts || []);
-        } catch (error) {
-          toast.error('Failed to load schedule');
-        }
-      };
-      fetchSchedule();
+    if (schedule?._id) {
+      loadShifts();
     }
-  }, [scheduleId]);
+  }, [schedule]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const data = await generateSchedule(scheduleId);
-      setShifts(data.events || []);
-      toast.success('Schedule generated successfully');
+      const { events } = await autoGenerateEvents(schedule._id);
+      setShifts(events || []);
+      toast.success('Schedule auto-populated successfully');
     } catch (error) {
-      toast.error('Failed to generate schedule');
+      toast.error('Failed to auto-populate schedule.');
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleAddShift = async () => {
-    if (!operations) {
-      toast.error('Business hours are not loaded.');
-      return;
-    }
-
-    const currentDay = new Date().toLocaleString('en-US', { weekday: 'short' });
-    const hours = operations.hours[currentDay];
-
-    if (!hours || hours.closed) {
-      toast.error('Cannot add shift: Business is closed for the selected day.');
-      return;
-    }
-
     try {
-      const newShift = await addShift({
-        scheduleId,
-        startTime: `${hours.start}:00`,
-        endTime: `${hours.end}:00`,
-        employeeId: null,
+      const newEvent = await addShift({
+        scheduleId: schedule._id,
+        startTime: new Date().toISOString(), 
+        endTime: new Date(new Date().getTime() + 3600000).toISOString(),
+        details: 'New Shift',
       });
 
-      setShifts([...shifts, newShift]);
-      toast.success('Shift added successfully');
+      setShifts((prev) => [...prev, newEvent]);
+      toast.success('Shift added successfully.');
     } catch (error) {
-      toast.error('Failed to add shift');
+      toast.error('Failed to add shift.');
     }
-  };
-
-  const handleDeleteShift = async (shiftId) => {
-    try {
-      setShifts(shifts.filter((shift) => shift._id !== shiftId));
-      toast.success('Shift deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete shift');
-    }
-  };
-
-  const handleDragEnd = (result) => {
-    if (!result.destination) return;
-
-    const updatedShifts = Array.from(shifts);
-    const [movedShift] = updatedShifts.splice(result.source.index, 1);
-    updatedShifts.splice(result.destination.index, 0, movedShift);
-
-    setShifts(updatedShifts);
-    toast.success('Shift order updated');
   };
 
   return (
     <div className="p-4">
-      <button onClick={onBack} className="text-blue-500 underline">
+      {/* Back Button */}
+      <button
+        onClick={onBack}
+        className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded"
+      >
         Back to Schedules
       </button>
-      <h2 className="text-xl font-semibold mt-4">
-        {schedule ? `Editing: ${schedule.name}` : 'New Schedule'}
-      </h2>
+
+      {/* Generate Schedule Button */}
       <button
         onClick={handleGenerate}
         disabled={isGenerating}
-        className="bg-green-500 text-white px-4 py-2 rounded mt-4"
+        className="bg-green-500 text-white px-4 py-2 rounded mt-4 ml-4"
       >
         {isGenerating ? 'Generating...' : 'Auto-Generate Schedule'}
       </button>
-      {isGenerating && <div className="text-center text-gray-500 mt-2">Generating schedule...</div>}
+
+      {/* Add Shift Button */}
       <button
         onClick={handleAddShift}
         className="bg-blue-500 text-white px-4 py-2 rounded mt-4 ml-4"
       >
         Add Shift
       </button>
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="shifts">
-          {(provided) => (
-            <ul
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="mt-4 bg-gray-100 p-4 rounded shadow"
-            >
-              {shifts.map((shift, index) => (
-                <Draggable key={shift._id} draggableId={shift._id} index={index}>
-                  {(provided) => (
-                    <li
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className="p-2 bg-white rounded shadow mb-2 flex justify-between items-center"
-                    >
-                      <span>
-                        {shift.startTime} - {shift.endTime} (Employee: {shift.employeeId || 'Unassigned'})
-                      </span>
-                      <button
-                        onClick={() => handleDeleteShift(shift._id)}
-                        className="text-red-500"
-                      >
-                        Delete
-                      </button>
-                    </li>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </ul>
-          )}
-        </Droppable>
-      </DragDropContext>
+
+      {/* Shift Calendar */}
+      <ShiftCalendar shifts={shifts} />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDrop } from 'react-dnd';
-import { fetchShifts, updateShift, deleteShift, addShift, fetchOperations } from '../../api';
+import { getEventsBySchedule, updateEvent, deleteEvent, addShift, fetchOperations } from '../../utils/api';
 import { toast } from 'react-toastify';
 
 const ShiftList = ({ scheduleId }) => {
@@ -14,7 +14,7 @@ const ShiftList = ({ scheduleId }) => {
       setIsLoading(true);
       try {
         const [fetchedShifts, operations] = await Promise.all([
-          fetchShifts(scheduleId),
+          getEventsBySchedule(scheduleId),
           fetchOperations(),
         ]);
         setShifts(fetchedShifts);
@@ -33,7 +33,7 @@ const ShiftList = ({ scheduleId }) => {
 
   const handleUpdateShift = async (shiftId, updatedData) => {
     try {
-      const updatedShift = await updateShift(shiftId, updatedData);
+      const updatedShift = await updateEvent(shiftId, updatedData);
       setShifts((prev) =>
         prev.map((shift) => (shift._id === shiftId ? updatedShift : shift))
       );
@@ -45,7 +45,7 @@ const ShiftList = ({ scheduleId }) => {
 
   const handleDeleteShift = async (shiftId) => {
     try {
-      await deleteShift(shiftId);
+      await deleteEvent(shiftId);
       setShifts((prev) => prev.filter((shift) => shift._id !== shiftId));
       toast.success('Shift deleted successfully!');
     } catch (error) {

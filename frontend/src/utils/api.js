@@ -183,33 +183,57 @@ export const deleteSchedule = async (id) => {
 
 // Fetch all events for a schedule
 export const getEventsBySchedule = async (scheduleId) => {
-  const res = await axios.get(`${API_BASE_URL}/events/${scheduleId}`, {
-    headers: getAuthHeaders(),
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+
+  const res = await axios.get(`${API_BASE_URL}/events/schedule/${scheduleId}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
+
   return res.data;
 };
 
-// Add a shift
-export const addShift = async (shiftData) => {
-  const res = await axios.post(`${API_BASE_URL}/events/shift/add`, shiftData, {
-    headers: getAuthHeaders(),
+export const addShift = async (eventData) => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+
+  const res = await axios.post(`${API_BASE_URL}/events/add`, eventData, {
+    headers: { Authorization: `Bearer ${token}` },
   });
+
   return res.data;
 };
 
-// Update an event
-export const updateEvent = async (eventId, eventData) => {
-  const res = await axios.put(`${API_BASE_URL}/events/${eventId}`, eventData, {
-    headers: getAuthHeaders(),
+export const updateEvent = async (eventData) => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+
+  const res = await axios.put(`${API_BASE_URL}/events/update`, eventData, {
+    headers: { Authorization: `Bearer ${token}` },
   });
+
   return res.data;
 };
 
-//delete shifts in bulk
 export const deleteEvent = async (eventId) => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+
   const res = await axios.delete(`${API_BASE_URL}/events/${eventId}`, {
-    headers: getAuthHeaders(),
+    headers: { Authorization: `Bearer ${token}` },
   });
+
+  return res.data;
+};
+
+export const autoGenerateEvents = async (scheduleId) => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+
+  const res = await axios.post(`${API_BASE_URL}/events/auto-generate`, { scheduleId }, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
   return res.data;
 };
 
