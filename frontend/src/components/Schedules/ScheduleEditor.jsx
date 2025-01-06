@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { autoGenerateEvents, addShift, getEventsBySchedule, updateEvent, deleteEvent } from '../../utils/api';
+import { autoGenerateEvents, addShift, updateEvent, deleteEvent, getEventsBySchedule } from '../../utils/api';
 import { toast } from 'react-toastify';
 import ShiftCalendar from './ShiftCalendar';
 
@@ -7,14 +7,25 @@ const ScheduleEditor = ({ schedule, onBack }) => {
   const [shifts, setShifts] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Load shifts when the schedule changes
   useEffect(() => {
     const loadShifts = async () => {
       try {
-        const events = await getEventsBySchedule(schedule._id);
-        console.log("Fetched events:", events);
-        setShifts(events);
+        const response = await getEventsBySchedule(schedule._id);
+        if (response.success) {
+          const events = response.events.map((event) => ({
+            Id: event.id, 
+            Subject: event.details || 'Shift', 
+            StartTime: new Date(event.start), 
+            EndTime: new Date(event.end), 
+          }));
+          setShifts(events);
+        } else {
+          toast.error('Failed to fetch shifts.');
+        }
       } catch (error) {
-        toast.error('Failed to load events.');
+        console.error('Error fetching events:', error);
+        toast.error('Failed to load shifts.');
       }
     };
 
@@ -23,59 +34,83 @@ const ScheduleEditor = ({ schedule, onBack }) => {
     }
   }, [schedule]);
 
+  // Generate schedule
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
       const { events } = await autoGenerateEvents(schedule._id);
-      setShifts(events || []);
-      toast.success('Schedule auto-populated successfully');
+      const formattedEvents = events.map((event) => ({
+        Id: event.id,
+        Subject: event.details,
+        StartTime: new Date(event.start),
+        EndTime: new Date(event.end),
+      }));
+      setShifts(formattedEvents);
+      toast.success('Schedule auto-generated successfully!');
     } catch (error) {
-      toast.error('Failed to auto-populate schedule.');
+      console.error('Error generating schedule:', error);
+      toast.error('Failed to generate schedule.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleAddShift = async () => {
+  // Add a new shift
+  const handleAddShift = async (shiftData) => {
     try {
-      const now = new Date();
-      const newEvent = await addShift({
+      const newShift = await addShift({
         scheduleId: schedule._id,
-        startTime: now.toISOString(),
-        endTime: new Date(now.getTime() + 3600000).toISOString(),
-        details: 'New Shift',
+        startTime: shiftData.StartTime.toISOString(),
+        endTime: shiftData.EndTime.toISOString(),
+        details: shiftData.Subject || 'New Shift',
       });
-
-      setShifts((prev) => [...prev, newEvent]);
+      setShifts((prev) => [
+        ...prev,
+        {
+          Id: newShift.id,
+          Subject: newShift.details,
+          StartTime: new Date(newShift.startTime),
+          EndTime: new Date(newShift.endTime),
+        },
+      ]);
       toast.success('Shift added successfully.');
     } catch (error) {
+      console.error('Error adding shift:', error);
       toast.error('Failed to add shift.');
     }
   };
 
-  const handleEditShift = async (shift) => {
+  // Edit an existing shift
+  const handleEditShift = async (shiftData) => {
     try {
-      const updatedShift = await updateEvent(shift.id, {
-        startTime: shift.startTime,
-        endTime: shift.endTime,
-        details: shift.details,
+      await updateEvent({
+        id: shiftData.Id,
+        startTime: shiftData.StartTime.toISOString(),
+        endTime: shiftData.EndTime.toISOString(),
+        details: shiftData.Subject,
       });
-
       setShifts((prev) =>
-        prev.map((s) => (s._id === shift.id ? updatedShift : s))
+        prev.map((shift) =>
+          shift.Id === shiftData.Id
+            ? { ...shift, ...shiftData }
+            : shift
+        )
       );
       toast.success('Shift updated successfully.');
     } catch (error) {
+      console.error('Error updating shift:', error);
       toast.error('Failed to update shift.');
     }
   };
 
+  // Delete a shift
   const handleDeleteShift = async (shiftId) => {
     try {
       await deleteEvent(shiftId);
-      setShifts((prev) => prev.filter((s) => s._id !== shiftId));
+      setShifts((prev) => prev.filter((shift) => shift.Id !== shiftId));
       toast.success('Shift deleted successfully.');
     } catch (error) {
+      console.error('Error deleting shift:', error);
       toast.error('Failed to delete shift.');
     }
   };
@@ -99,16 +134,9 @@ const ScheduleEditor = ({ schedule, onBack }) => {
         {isGenerating ? 'Generating...' : 'Auto-Generate Schedule'}
       </button>
 
-      {/* Add Shift Button */}
-      <button
-        onClick={handleAddShift}
-        className="bg-blue-500 text-white px-4 py-2 rounded mt-4 ml-4"
-      >
-        Add Shift
-      </button>
-
       {/* Shift Calendar */}
       <ShiftCalendar
+        scheduleId={schedule._id}
         shifts={shifts}
         onAddShift={handleAddShift}
         onEditShift={handleEditShift}
