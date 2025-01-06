@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getSchedules, generateSchedule, fetchOperations } from "../utils/api";
+import { getSchedules, generateSchedule, fetchOperations, deleteSchedule } from "../utils/api";
 import { toast } from "react-toastify";
 import ScheduleGrid from "../components/Schedules/ScheduleGrid";
 import { useNavigate } from "react-router-dom";
@@ -46,8 +46,8 @@ const SchedulesPage = () => {
   const handleCreateSchedule = async ({ month, year }) => {
     setCreating(true);
     try {
-      console.log("Business Hours:", operations); 
-      console.log("Month:", month, "Year:", year); 
+      console.log("Business Hours:", operations);
+      console.log("Month:", month, "Year:", year);
 
       // Ensure operations data is available
       if (!operations || Object.keys(operations).length === 0) {
@@ -85,6 +85,18 @@ const SchedulesPage = () => {
     navigate(`/schedule/edit/${scheduleId}`);
   };
 
+  const handleDeleteSchedule = async (scheduleId) => {
+    try {
+      await deleteSchedule(scheduleId);
+      const schedulesData = await getSchedules();
+      setSchedules(schedulesData);
+      toast.success("Schedule deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting schedule:", err.message);
+    }
+  };
+
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Schedules</h1>
@@ -98,7 +110,7 @@ const SchedulesPage = () => {
       {isLoading ? (
         <p className="text-gray-500">Loading schedules...</p>
       ) : schedules.length > 0 ? (
-        <ScheduleGrid schedules={schedules} onEdit={handleEditSchedule} />
+        <ScheduleGrid schedules={schedules} onEdit={handleEditSchedule} onDelete={handleDeleteSchedule} />
       ) : (
         <p className="text-gray-500">No schedules available. Create one to get started!</p>
       )}
