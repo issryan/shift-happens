@@ -1,71 +1,112 @@
-import React, { useEffect, useState } from 'react';
-import { generateSchedule, getSchedules, deleteSchedule } from '../utils/api';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import ScheduleGrid from '../components/Schedules/ScheduleGrid';
+import React, { useState, useEffect } from "react";
+import { getSchedules, generateSchedule, fetchOperations } from "../utils/api";
+import { toast } from "react-toastify";
+import ScheduleGrid from "../components/Schedules/ScheduleGrid";
+import { useNavigate } from "react-router-dom";
+import MonthPickerModal from "../components/Schedules/MonthPickerModal";
 
 const SchedulesPage = () => {
   const [schedules, setSchedules] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [operations, setOperations] = useState(null);
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
   const navigate = useNavigate();
 
+  // Load schedules and operations data on mount
   useEffect(() => {
-    const fetchSchedules = async () => {
+    const loadSchedules = async () => {
       try {
         const data = await getSchedules();
         setSchedules(data);
       } catch (error) {
-        toast.error('Failed to fetch schedules.');
+        toast.error("Failed to fetch schedules.");
+        console.error("Error fetching schedules:", error.message);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchSchedules();
+    const loadOperations = async () => {
+      try {
+        const operationsData = await fetchOperations();
+        console.log("Fetched Operations Data:", operationsData);
+        setOperations(operationsData.hours || {});
+      } catch (error) {
+        toast.error("Failed to fetch business operations.");
+        console.error("Error fetching operations:", error.message);
+      }
+    };
+
+    loadSchedules();
+    loadOperations();
   }, []);
 
-  const handleGenerateSchedule = async () => {
+  // Handle schedule creation
+  const handleCreateSchedule = async ({ month, year }) => {
+    setCreating(true);
     try {
-      const schedule = await generateSchedule(); // Assumes default generation parameters
-      setSchedules((prev) => [...prev, schedule]);
-      toast.success('Schedule generated successfully!');
+      console.log("Business Hours:", operations); 
+      console.log("Month:", month, "Year:", year); 
+
+      // Ensure operations data is available
+      if (!operations || Object.keys(operations).length === 0) {
+        toast.error("Business hours data is missing. Please configure your operations.");
+        return;
+      }
+
+      // Validate month and year
+      if (!month || !year) {
+        toast.error("Please select a valid month and year.");
+        return;
+      }
+
+      // Generate schedule
+      await generateSchedule({
+        month,
+        year,
+        businessHours: operations,
+      });
+
+      toast.success("Schedule generated successfully!");
+      const schedulesData = await getSchedules();
+      setSchedules(schedulesData);
     } catch (error) {
-      toast.error('Failed to generate schedule.');
+      console.error("Error generating schedule:", error.response || error.message);
+      toast.error(
+        error.response?.data?.message || "Failed to generate schedule. Check the logs for details."
+      );
+    } finally {
+      setCreating(false);
     }
   };
 
-  const handleDeleteSchedule = async (id) => {
-    try {
-      await deleteSchedule(id);
-      setSchedules((prev) => prev.filter((schedule) => schedule._id !== id));
-      toast.success('Schedule deleted successfully!');
-    } catch (error) {
-      toast.error('Failed to delete schedule.');
-    }
-  };
-
-  const handleEditSchedule = (id) => {
-    navigate(`/schedule/edit${id}`);
+  const handleEditSchedule = (scheduleId) => {
+    navigate(`/schedule/edit/${scheduleId}`);
   };
 
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Schedules</h1>
       <button
-        onClick={handleGenerateSchedule}
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
+        onClick={() => setIsMonthPickerOpen(true)}
+        disabled={creating}
+        className="bg-blue-500 text-white px-4 py-2 rounded shadow mb-4"
       >
-        Generate Schedule
+        {creating ? "Creating..." : "Create New Schedule"}
       </button>
       {isLoading ? (
-        <p>Loading schedules...</p>
+        <p className="text-gray-500">Loading schedules...</p>
+      ) : schedules.length > 0 ? (
+        <ScheduleGrid schedules={schedules} onEdit={handleEditSchedule} />
       ) : (
-        <ScheduleGrid
-          schedules={schedules}
-          onDelete={handleDeleteSchedule}
-          onEdit={handleEditSchedule}
-        />
+        <p className="text-gray-500">No schedules available. Create one to get started!</p>
       )}
+      <MonthPickerModal
+        isOpen={isMonthPickerOpen}
+        onClose={() => setIsMonthPickerOpen(false)}
+        onSelect={({ month, year }) => handleCreateSchedule({ month, year })}
+      />
     </div>
   );
 };
