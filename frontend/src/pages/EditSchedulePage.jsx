@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import ScheduleEditor from '../components/Schedules/ScheduleEditor';
 
 const EditSchedulePage = () => {
-  const { scheduleId } = useParams();
+  const { id: scheduleId } = useParams();
   const navigate = useNavigate();
   const [schedule, setSchedule] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -13,33 +13,31 @@ const EditSchedulePage = () => {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
+        console.log("Fetching schedule with ID:", scheduleId);
         const data = await getScheduleById(scheduleId);
+        console.log("Fetched schedule data:", data);
         setSchedule(data);
       } catch (error) {
-        toast.error('Failed to fetch the schedule.');
-        navigate('/schedules'); // Redirects to the schedules list if an error occurs
+        toast.error("Failed to load the schedule.");
       } finally {
         setIsLoading(false);
       }
     };
-
+  
     if (scheduleId) {
       fetchSchedule();
+    } else {
+      toast.error("No schedule selected.");
+      navigate("/schedule");
     }
   }, [scheduleId, navigate]);
 
   const handleBack = () => {
-    navigate('/schedules');
+    navigate('/schedule');
   };
 
   return (
     <div className="p-4">
-      <button
-        onClick={handleBack}
-        className="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded"
-      >
-        Back to Schedules
-      </button>
       {isLoading ? (
         <p className="text-gray-500 mt-4">Loading schedule...</p>
       ) : schedule ? (

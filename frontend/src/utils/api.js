@@ -190,6 +190,7 @@ export const getEventsBySchedule = async (scheduleId) => {
     headers: { Authorization: `Bearer ${token}` },
   });
 
+  console.log("getEventsBySchedule response:", res.data);
   return res.data;
 };
 

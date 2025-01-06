@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { autoGenerateEvents, addShift, getEventsBySchedule } from '../../utils/api';
+import { autoGenerateEvents, addShift, getEventsBySchedule, updateEvent, deleteEvent } from '../../utils/api';
 import { toast } from 'react-toastify';
 import ShiftCalendar from './ShiftCalendar';
 
@@ -11,6 +11,7 @@ const ScheduleEditor = ({ schedule, onBack }) => {
     const loadShifts = async () => {
       try {
         const events = await getEventsBySchedule(schedule._id);
+        console.log("Fetched events:", events);
         setShifts(events);
       } catch (error) {
         toast.error('Failed to load events.');
@@ -37,10 +38,11 @@ const ScheduleEditor = ({ schedule, onBack }) => {
 
   const handleAddShift = async () => {
     try {
+      const now = new Date();
       const newEvent = await addShift({
         scheduleId: schedule._id,
-        startTime: new Date().toISOString(), 
-        endTime: new Date(new Date().getTime() + 3600000).toISOString(),
+        startTime: now.toISOString(),
+        endTime: new Date(now.getTime() + 3600000).toISOString(),
         details: 'New Shift',
       });
 
@@ -48,6 +50,33 @@ const ScheduleEditor = ({ schedule, onBack }) => {
       toast.success('Shift added successfully.');
     } catch (error) {
       toast.error('Failed to add shift.');
+    }
+  };
+
+  const handleEditShift = async (shift) => {
+    try {
+      const updatedShift = await updateEvent(shift.id, {
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        details: shift.details,
+      });
+
+      setShifts((prev) =>
+        prev.map((s) => (s._id === shift.id ? updatedShift : s))
+      );
+      toast.success('Shift updated successfully.');
+    } catch (error) {
+      toast.error('Failed to update shift.');
+    }
+  };
+
+  const handleDeleteShift = async (shiftId) => {
+    try {
+      await deleteEvent(shiftId);
+      setShifts((prev) => prev.filter((s) => s._id !== shiftId));
+      toast.success('Shift deleted successfully.');
+    } catch (error) {
+      toast.error('Failed to delete shift.');
     }
   };
 
@@ -79,7 +108,12 @@ const ScheduleEditor = ({ schedule, onBack }) => {
       </button>
 
       {/* Shift Calendar */}
-      <ShiftCalendar shifts={shifts} />
+      <ShiftCalendar
+        shifts={shifts}
+        onAddShift={handleAddShift}
+        onEditShift={handleEditShift}
+        onDeleteShift={handleDeleteShift}
+      />
     </div>
   );
 };
